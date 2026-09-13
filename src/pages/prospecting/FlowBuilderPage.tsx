@@ -67,7 +67,7 @@ export default function FlowBuilderPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-semibold">Flow Builder</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Visualização do flow <span className="font-mono">sdr-odonto-v2.6</span>.
+          Visualização do flow <span className="font-mono" translate="no">sdr-odonto-v2.6</span>.
         </p>
       </div>
 
@@ -84,7 +84,7 @@ export default function FlowBuilderPage() {
 
             <Card className="flex-1 mb-4">
               <CardHeader className="pb-2 pt-3 px-4">
-                <div className="flex items-center gap-2">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
                   <CardTitle className="text-base">{step.label}</CardTitle>
                   <Badge className={`text-xs border ${STAGE_COLORS[step.stage] ?? ''}`} variant="outline">
                     {step.stage}
@@ -93,12 +93,12 @@ export default function FlowBuilderPage() {
                 <p className="text-xs text-muted-foreground">{step.description}</p>
               </CardHeader>
               <CardContent className="px-4 pb-3">
-                <p className="text-sm bg-muted/50 rounded p-2 italic text-muted-foreground">
-                  "{step.reply}"
+                <p className="text-sm bg-muted/50 rounded p-2 italic text-muted-foreground break-words">
+                  “{step.reply}”
                 </p>
                 {step.next && (
                   <p className="text-xs text-muted-foreground mt-2">
-                    próxima etapa: <span className="font-mono">{step.next}</span>
+                    próxima etapa: <span className="font-mono" translate="no">{step.next}</span>
                   </p>
                 )}
               </CardContent>

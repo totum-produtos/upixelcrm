@@ -84,15 +84,18 @@ export default function VoIPPage() {
                 <Label htmlFor="voip-phone">Telefone</Label>
                 <Input
                   id="voip-phone"
+                  name="phone"
+                  type="tel"
                   inputMode="tel"
-                  placeholder="5531999990000"
+                  autoComplete="tel"
+                  placeholder="Ex: 5531999990000…"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                 />
               </div>
               <Button type="submit" disabled={!ready || callMutation.isPending} className="gap-2">
-                <Phone className="h-4 w-4" />
-                {callMutation.isPending ? 'Chamando...' : 'Iniciar chamada'}
+                <Phone className="h-4 w-4" aria-hidden="true" />
+                {callMutation.isPending ? 'Chamando…' : 'Iniciar Chamada'}
               </Button>
             </form>
           </CardContent>
@@ -103,8 +106,8 @@ export default function VoIPPage() {
             <CardTitle className="text-base">Status</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
-            {isLoading && <p className="text-muted-foreground">Consultando API...</p>}
-            {isError && <p className="text-destructive">Não foi possível consultar a API VoIP.</p>}
+            {isLoading && <p className="text-muted-foreground" role="status" aria-live="polite">Consultando API…</p>}
+            {isError && <p className="text-destructive" role="alert">Não foi possível consultar a API VoIP.</p>}
             {data && (
               <>
                 <div className="flex items-center justify-between">

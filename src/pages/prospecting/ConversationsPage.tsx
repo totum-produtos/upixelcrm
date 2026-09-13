@@ -42,7 +42,7 @@ const STAGE_LABELS: Record<SdrStage, string> = {
 };
 
 function formatDate(iso: string | null): string {
-  if (!iso) return '-';
+  if (!iso) return '—';
   return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(iso));
 }
 
@@ -69,7 +69,7 @@ export default function ConversationsPage() {
   const [phone, setPhone] = useState('');
   const [flowId, setFlowId] = useState('sdr-odonto-v2.6');
 
-  const { data: conversations = [], isLoading, isError } = useQuery({
+  const { data: conversations = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['sdr-conversations'],
     queryFn: fetchConversations,
   });
@@ -100,26 +100,30 @@ export default function ConversationsPage() {
       </div>
 
       {isLoading && (
-        <div className="flex justify-center py-16">
+        <div className="flex justify-center py-16" role="status" aria-live="polite">
           <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+          <span className="sr-only">Carregando conversas…</span>
         </div>
       )}
 
       {isError && (
-        <div className="text-center py-16 text-destructive">
-          Erro ao carregar conversas. Verifique a conexão com a API.
+        <div className="text-center py-16 text-destructive" role="alert">
+          <p>Erro ao carregar conversas. Verifique a conexão com a API.</p>
+          <Button type="button" variant="outline" className="mt-4" onClick={() => refetch()}>
+            Tentar Novamente
+          </Button>
         </div>
       )}
 
       {!isLoading && !isError && conversations.length === 0 && (
         <div className="text-center py-16 text-muted-foreground">
-          <p className="text-lg font-medium">Nenhuma conversa SDR ativa</p>
-          <p className="text-sm mt-1">Clique em "Nova Conversa" para iniciar uma prospecção.</p>
+          <p className="text-lg font-medium">Nenhuma Conversa SDR Ativa</p>
+          <p className="text-sm mt-1">Clique em “Nova Conversa” para iniciar uma prospecção.</p>
         </div>
       )}
 
       {!isLoading && !isError && conversations.length > 0 && (
-        <div className="border rounded-lg overflow-hidden">
+        <div className="border rounded-lg overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr>
@@ -133,15 +137,15 @@ export default function ConversationsPage() {
             <tbody className="divide-y">
               {conversations.map((conv) => (
                 <tr key={conv.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="px-4 py-3 font-mono">{conv.phone}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{conv.flow_id}</td>
+                  <td className="px-4 py-3 font-mono tabular-nums whitespace-nowrap">{conv.phone}</td>
+                  <td className="px-4 py-3 text-muted-foreground break-words">{conv.flow_id}</td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STAGE_COLORS[conv.stage] ?? 'bg-gray-100 text-gray-600'}`}>
                       {STAGE_LABELS[conv.stage] ?? conv.stage}
                     </span>
                   </td>
                   <td className="px-4 py-3 max-w-xs truncate text-muted-foreground">
-                    {conv.last_message ?? '-'}
+                    {conv.last_message ?? '—'}
                   </td>
                   <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                     {formatDate(conv.last_message_at ?? conv.updated_at)}
@@ -163,7 +167,11 @@ export default function ConversationsPage() {
               <Label htmlFor="phone">Telefone</Label>
               <Input
                 id="phone"
-                placeholder="5544999990000"
+                name="phone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                placeholder="Ex: 5531999990000…"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 required
@@ -173,6 +181,8 @@ export default function ConversationsPage() {
               <Label htmlFor="flow">Flow</Label>
               <Input
                 id="flow"
+                name="flow_id"
+                autoComplete="off"
                 value={flowId}
                 onChange={(e) => setFlowId(e.target.value)}
               />
@@ -182,11 +192,11 @@ export default function ConversationsPage() {
                 Cancelar
               </Button>
               <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? 'Criando...' : 'Criar'}
+                {mutation.isPending ? 'Criando…' : 'Criar'}
               </Button>
             </DialogFooter>
             {mutation.isError && (
-              <p className="text-xs text-destructive">{(mutation.error as Error).message}</p>
+              <p className="text-xs text-destructive" role="alert">{(mutation.error as Error).message}</p>
             )}
           </form>
         </DialogContent>
