@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, MessageSquare, Kanban, CheckSquare, Zap, Brain, BookOpen, Megaphone, Send,
   BarChart3, Plug, HelpCircle, LogOut, Bot, Settings, ShieldCheck, FileText, Clock, Upload, Sparkles,
-  Target,
+  Target, Radio, Phone, Mail, Smartphone, Camera, Globe, Radar, GitBranch, SlidersHorizontal,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -67,6 +67,29 @@ const setupLinks: NavLeaf[] = [
 
 // Grupos secundários — itens usados com menos frequência, agrupados por domínio.
 const navGroups: NavGroup[] = [
+  {
+    id: "canais",
+    title: "Canais",
+    icon: Radio,
+    items: [
+      { title: "WhatsApp", url: "/whatsapp", icon: Smartphone },
+      { title: "AI Chat", url: "/channels/ai-chat", icon: Bot },
+      { title: "E-mail", url: "/channels/email", icon: Mail },
+      { title: "Facebook", url: "/facebook-page", icon: Globe },
+      { title: "Instagram", url: "/instagram", icon: Camera },
+      { title: "VoIP", url: "/channels/voip", icon: Phone },
+    ],
+  },
+  {
+    id: "prospecting",
+    title: "Prospecção",
+    icon: Radar,
+    items: [
+      { title: "Conversas SDR", url: "/prospecting/conversations", icon: MessageSquare },
+      { title: "Flow Builder", url: "/prospecting/flows", icon: GitBranch },
+      { title: "Config SDR", url: "/prospecting/settings", icon: SlidersHorizontal },
+    ],
+  },
   {
     id: "marketing",
     title: "Marketing",

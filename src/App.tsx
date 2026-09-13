@@ -59,6 +59,11 @@ const NovidadesPage = lazy(() => import("./pages/NovidadesPage"));
 const GoalsPage = lazy(() => import("./pages/GoalsPage"));
 const GoalDetailPage = lazy(() => import("./pages/GoalDetailPage"));
 const GoalsConfigPage = lazy(() => import("./pages/GoalsConfigPage"));
+const ComingSoonPage = lazy(() => import("./pages/ComingSoonPage"));
+const ConversationsSDRPage = lazy(() => import("./pages/prospecting/ConversationsPage"));
+const FlowBuilderPage = lazy(() => import("./pages/prospecting/FlowBuilderPage"));
+const SDRSettingsPage = lazy(() => import("./pages/prospecting/SDRSettingsPage"));
+const VoIPPage = lazy(() => import("./pages/channels/VoIPPage"));
 
 // Privacy Policy / Terms / Data Deletion Status são servidos como HTML estático
 // pelo nginx (public/privacy-policy/index.html, etc.) — Meta crawler precisa
@@ -185,6 +190,12 @@ function AppRoutes() {
                 <Route path="/google-ads" element={<ProtectedRoute><GoogleAdsPage /></ProtectedRoute>} />
                 <Route path="/database" element={<ProtectedRoute requiredPermission="settings.view"><DatabaseBackupPage /></ProtectedRoute>} />
                 <Route path="/master/integrations" element={<ProtectedRoute><MasterIntegrationsPage /></ProtectedRoute>} />
+                <Route path="/channels/ai-chat" element={<ProtectedRoute><ComingSoonPage title="AI Chat" description="Chat com IA nativo para suporte ao cliente em desenvolvimento." /></ProtectedRoute>} />
+                <Route path="/channels/email" element={<ProtectedRoute><ComingSoonPage title="E-mail" description="Integração de e-mail em desenvolvimento." /></ProtectedRoute>} />
+                <Route path="/channels/voip" element={<ProtectedRoute><VoIPPage /></ProtectedRoute>} />
+                <Route path="/prospecting/conversations" element={<ProtectedRoute><ConversationsSDRPage /></ProtectedRoute>} />
+                <Route path="/prospecting/flows" element={<ProtectedRoute><FlowBuilderPage /></ProtectedRoute>} />
+                <Route path="/prospecting/settings" element={<ProtectedRoute><SDRSettingsPage /></ProtectedRoute>} />
                 <Route path="/novidades" element={<ProtectedRoute><NovidadesPage /></ProtectedRoute>} />
                 <Route path="/metas" element={<ProtectedRoute><GoalsPage /></ProtectedRoute>} />
                 <Route path="/metas/configurar" element={<ProtectedRoute requiredPermission="settings.view"><GoalsConfigPage /></ProtectedRoute>} />
