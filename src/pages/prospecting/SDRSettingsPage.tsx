@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -98,13 +99,8 @@ export default function SDRSettingsPage() {
   }
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold">Configurações SDR</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Controle de envio automático, horários e limites diários.
-        </p>
-      </div>
+    <AppLayout title="Configurações SDR" subtitle="Controle de envio automático, horários e limites diários.">
+    <div className="max-w-2xl mx-auto">
 
       <form onSubmit={handleSave} className="space-y-5">
         <Card aria-busy={loading}>
@@ -219,5 +215,6 @@ export default function SDRSettingsPage() {
         </div>
       </form>
     </div>
+    </AppLayout>
   );
 }

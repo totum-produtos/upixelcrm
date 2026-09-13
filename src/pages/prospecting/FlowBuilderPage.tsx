@@ -1,3 +1,4 @@
+import { AppLayout } from '@/components/layout/AppLayout';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -63,7 +64,8 @@ const STAGE_COLORS: Record<string, string> = {
 
 export default function FlowBuilderPage() {
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <AppLayout title="Flow Builder" subtitle="Visualização e edição de flows SDR.">
+    <div className="max-w-3xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold">Flow Builder</h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -107,5 +109,6 @@ export default function FlowBuilderPage() {
         ))}
       </div>
     </div>
+    </AppLayout>
   );
 }

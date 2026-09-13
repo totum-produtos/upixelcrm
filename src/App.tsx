@@ -64,6 +64,8 @@ const ConversationsSDRPage = lazy(() => import("./pages/prospecting/Conversation
 const FlowBuilderPage = lazy(() => import("./pages/prospecting/FlowBuilderPage"));
 const SDRSettingsPage = lazy(() => import("./pages/prospecting/SDRSettingsPage"));
 const VoIPPage = lazy(() => import("./pages/channels/VoIPPage"));
+const ChannelsPage = lazy(() => import("./pages/channels/ChannelsPage"));
+const EmailPage = lazy(() => import("./pages/channels/EmailPage"));
 
 // Privacy Policy / Terms / Data Deletion Status são servidos como HTML estático
 // pelo nginx (public/privacy-policy/index.html, etc.) — Meta crawler precisa
@@ -190,8 +192,9 @@ function AppRoutes() {
                 <Route path="/google-ads" element={<ProtectedRoute><GoogleAdsPage /></ProtectedRoute>} />
                 <Route path="/database" element={<ProtectedRoute requiredPermission="settings.view"><DatabaseBackupPage /></ProtectedRoute>} />
                 <Route path="/master/integrations" element={<ProtectedRoute><MasterIntegrationsPage /></ProtectedRoute>} />
-                <Route path="/channels/ai-chat" element={<ProtectedRoute><ComingSoonPage title="AI Chat" description="Chat com IA nativo para suporte ao cliente em desenvolvimento." /></ProtectedRoute>} />
-                <Route path="/channels/email" element={<ProtectedRoute><ComingSoonPage title="E-mail" description="Integração de e-mail em desenvolvimento." /></ProtectedRoute>} />
+                <Route path="/channels" element={<ProtectedRoute><ChannelsPage /></ProtectedRoute>} />
+                <Route path="/channels/ai-chat" element={<ProtectedRoute><IntelligencePage /></ProtectedRoute>} />
+                <Route path="/channels/email" element={<ProtectedRoute><EmailPage /></ProtectedRoute>} />
                 <Route path="/channels/voip" element={<ProtectedRoute><VoIPPage /></ProtectedRoute>} />
                 <Route path="/prospecting/conversations" element={<ProtectedRoute><ConversationsSDRPage /></ProtectedRoute>} />
                 <Route path="/prospecting/flows" element={<ProtectedRoute><FlowBuilderPage /></ProtectedRoute>} />

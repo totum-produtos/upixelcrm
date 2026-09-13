@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/upixelApi';
+import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -90,14 +91,12 @@ export default function ConversationsPage() {
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold">Conversas SDR</h1>
-          <p className="text-sm text-muted-foreground mt-1">Prospecção ativa via state machine</p>
-        </div>
-        <Button onClick={() => setModalOpen(true)}>Nova Conversa</Button>
-      </div>
+    <AppLayout
+      title="Conversas SDR"
+      subtitle="Prospecção ativa via state machine."
+      actions={<Button onClick={() => setModalOpen(true)}>Nova Conversa</Button>}
+    >
+    <div className="max-w-5xl mx-auto">
 
       {isLoading && (
         <div className="flex justify-center py-16" role="status" aria-live="polite">
@@ -202,5 +201,6 @@ export default function ConversationsPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </AppLayout>
   );
 }
