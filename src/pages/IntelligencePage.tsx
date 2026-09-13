@@ -9,8 +9,8 @@ import { AIProviderSettings } from "@/components/intelligence/AIProviderSettings
 export default function IntelligencePage() {
   return (
     <AppLayout title="Central de Inteligência" subtitle="IA a serviço da operação">
-      <div className="p-6 animate-fade-in">
-        <Tabs defaultValue="assistant" className="space-y-6">
+      <div className="px-6 pt-4 pb-0 animate-fade-in">
+        <Tabs defaultValue="assistant" className="space-y-4">
           <TabsList className="bg-secondary">
             <TabsTrigger value="assistant" className="text-xs gap-1.5">
               <Brain className="h-3.5 w-3.5" /> Assistente Operacional

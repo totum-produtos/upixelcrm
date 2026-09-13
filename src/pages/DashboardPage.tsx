@@ -3,12 +3,14 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useDashboardKpis } from "@/hooks/useDashboardKpis";
 import {
   TrendingUp, TrendingDown, Users, CheckSquare, Clock, Activity,
-  Loader2, DollarSign, Brain, ArrowUpRight, ArrowDownRight, AlertCircle,
+  Loader2, ArrowUpRight, ArrowDownRight, AlertCircle,
 } from "lucide-react";
-import { ComingSoonBadge } from "@/components/ui/coming-soon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { LeadsByPeriodChart, LeadsByOriginChart } from "@/components/dashboard/DashboardCharts";
 import { formatRelativeTime, formatShortDate } from "@/lib/format-date";
 import { useAppState } from "@/contexts/AppContext";
@@ -21,27 +23,6 @@ const typeColors: Record<string, string> = {
   task: "bg-success",
   automation: "bg-warning",
 };
-
-const accentColorMap: Record<string, string> = {
-  primary: "text-primary",
-  success: "text-success",
-  accent: "text-accent",
-  destructive: "text-destructive",
-  warning: "text-warning",
-};
-
-const accentBgMap: Record<string, string> = {
-  primary: "bg-primary/10",
-  success: "bg-success/10",
-  accent: "bg-accent/10",
-  destructive: "bg-destructive/10",
-  warning: "bg-warning/10",
-};
-
-const COMING_SOON_CARDS = [
-  { label: "ROI de Campanhas", value: "—", icon: DollarSign, description: "Retorno sobre investimento em ads" },
-  { label: "Custos de IA", value: "—", icon: Brain, description: "Consumo de tokens e agentes" },
-];
 
 export default function DashboardPage() {
   const { data, isLoading, error, refetch } = useDashboardKpis();
@@ -58,41 +39,42 @@ export default function DashboardPage() {
   const totalLeads = stats?.total_leads ?? 0;
   const pipelineTotal = useMemo(() => pipeline.reduce((s, p) => s + p.count, 0), [pipeline]);
 
-  const cards = useMemo(() => [
+  const overviewCards = useMemo(() => [
     {
       label: "Total de Leads",
-      value: String(totalLeads),
-      change: `${stats?.leads_30d ?? 0} últimos 30d`,
-      up: (stats?.leads_30d ?? 0) > 0,
-      icon: Users, accent: "primary",
+      value: totalLeads,
+      description: "Base ativa",
+      change: stats?.leads_30d ?? 0,
+      changeLabel: "novos nos últimos 30d",
+      up: (stats?.leads_30d ?? 0) >= 0,
+      icon: Users,
     },
     {
-      label: "Em andamento",
-      value: String(stats?.in_progress ?? 0),
-      change: `${stats?.new_leads ?? 0} novos`,
+      label: "Em Andamento",
+      value: stats?.in_progress ?? 0,
+      description: "Leads em progresso",
+      change: stats?.new_leads ?? 0,
+      changeLabel: "entradas novas",
       up: true,
-      icon: Loader2, accent: "accent",
+      icon: Loader2,
     },
     {
       label: "Leads Ganhos",
-      value: String(stats?.won ?? 0),
-      change: `${totalLeads > 0 ? Math.round(((stats?.won ?? 0) / totalLeads) * 100) : 0}% conversão`,
+      value: stats?.won ?? 0,
+      description: "Conversões confirmadas",
+      change: totalLeads > 0 ? Math.round(((stats?.won ?? 0) / totalLeads) * 100) : 0,
+      changeLabel: "% conversão",
       up: true,
-      icon: TrendingUp, accent: "success",
+      icon: TrendingUp,
     },
     {
       label: "Leads Perdidos",
-      value: String(stats?.lost ?? 0),
-      change: `${totalLeads > 0 ? Math.round(((stats?.lost ?? 0) / totalLeads) * 100) : 0}% perda`,
+      value: stats?.lost ?? 0,
+      description: "Oportunidades encerradas",
+      change: totalLeads > 0 ? Math.round(((stats?.lost ?? 0) / totalLeads) * 100) : 0,
+      changeLabel: "% perda",
       up: false,
-      icon: TrendingDown, accent: "destructive",
-    },
-    {
-      label: "Tarefas Pendentes",
-      value: String(stats?.tasks_pending ?? 0),
-      change: `${stats?.tasks_overdue ?? 0} atrasadas`,
-      up: false,
-      icon: CheckSquare, accent: "warning",
+      icon: TrendingDown,
     },
   ], [stats, totalLeads]);
 
@@ -109,25 +91,24 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <AppLayout title="Dashboard" subtitle="Erro ao carregar métricas">
+      <AppLayout title="Dashboard" subtitle="Visão geral da operação">
         <div className="p-8">
-          <div className="max-w-xl mx-auto bg-destructive/5 border border-destructive/30 rounded-xl p-6 space-y-4">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <p className="text-sm font-bold text-destructive">Não foi possível carregar o dashboard.</p>
-                <p className="text-xs text-muted-foreground">
-                  {error instanceof Error ? error.message : "Erro desconhecido. Tente novamente em instantes."}
-                </p>
-                <p className="text-[11px] text-muted-foreground mt-2">
-                  Se o problema persistir, verifique se a função <code className="text-foreground">dashboard_kpis()</code> está criada no banco.
-                </p>
+          <Card className="max-w-xl mx-auto border-destructive/30">
+            <CardHeader>
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                <div>
+                  <CardTitle className="text-destructive text-base">Não foi possível carregar o dashboard</CardTitle>
+                  <CardDescription className="mt-1">
+                    {error instanceof Error ? error.message : "Erro desconhecido. Tente novamente em instantes."}
+                  </CardDescription>
+                </div>
               </div>
-            </div>
-            <Button onClick={() => refetch()} size="sm">
-              Tentar novamente
-            </Button>
-          </div>
+            </CardHeader>
+            <CardFooter>
+              <Button onClick={() => refetch()} size="sm">Tentar novamente</Button>
+            </CardFooter>
+          </Card>
         </div>
       </AppLayout>
     );
@@ -136,14 +117,16 @@ export default function DashboardPage() {
   if (isLoading && !data) {
     return (
       <AppLayout title="Dashboard" subtitle="Visão geral da operação">
-        <div className="p-8 space-y-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="bg-card rounded-xl ghost-border p-5 space-y-3">
-                <Skeleton className="h-3 w-20" />
-                <Skeleton className="h-8 w-16" />
-                <Skeleton className="h-3 w-14" />
-              </div>
+        <div className="p-6 space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i}>
+                <CardHeader className="pb-2">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-7 w-16 mt-1" />
+                </CardHeader>
+                <CardFooter><Skeleton className="h-3 w-28" /></CardFooter>
+              </Card>
             ))}
           </div>
         </div>
@@ -153,144 +136,150 @@ export default function DashboardPage() {
 
   return (
     <AppLayout title="Dashboard" subtitle="Visão geral da operação">
-      <div className="p-8 space-y-8 animate-fade-in">
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          {cards.map((s) => (
-            <div key={s.label} className="bg-card rounded-xl ghost-border p-5 hover:shadow-card-hover transition-all duration-200 group relative overflow-hidden">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{s.label}</span>
-                <div className={`h-8 w-8 rounded-lg ${accentBgMap[s.accent]} flex items-center justify-center`}>
-                  <s.icon className={`h-4 w-4 ${accentColorMap[s.accent] ?? "text-muted-foreground"}`} />
+      <div className="p-6 space-y-6 animate-fade-in">
+
+        {/* Overview KPI Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {overviewCards.map((card) => (
+            <Card key={card.label} className="overflow-hidden">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardDescription>{card.label}</CardDescription>
+                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <card.icon className="h-4 w-4 text-primary" />
+                  </div>
                 </div>
-              </div>
-              <span className="text-3xl font-extrabold text-foreground block tracking-tight">{s.value}</span>
-              <span className={`text-[11px] font-semibold flex items-center gap-0.5 mt-1.5 ${s.up ? "text-success" : "text-muted-foreground"}`}>
-                {s.up ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                {s.change}
-              </span>
-            </div>
+                <CardTitle className="text-3xl font-bold tabular-nums">{card.value.toLocaleString('pt-BR')}</CardTitle>
+              </CardHeader>
+              <CardFooter className="pt-0 flex items-center gap-1.5">
+                <Badge variant="outline" className={`gap-1 text-xs ${card.up ? "text-green-600 border-green-200 bg-green-50 dark:bg-green-950/30 dark:border-green-800 dark:text-green-400" : "text-muted-foreground"}`}>
+                  {card.up ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                  {card.change}
+                </Badge>
+                <span className="text-xs text-muted-foreground">{card.changeLabel}</span>
+              </CardFooter>
+            </Card>
           ))}
         </div>
 
-        {/* Coming Soon */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {COMING_SOON_CARDS.map((c) => (
-            <div key={c.label} className="bg-card rounded-xl ghost-border p-5 relative overflow-hidden opacity-60">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{c.label}</span>
-                <ComingSoonBadge />
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
-                  <c.icon className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <div>
-                  <span className="text-xl font-bold text-muted-foreground">{c.value}</span>
-                  <p className="text-[11px] text-muted-foreground">{c.description}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Charts — agora alimentados pelos dados reais do tenant via RPC */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Charts Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <LeadsByPeriodChart data={leadsByMonth} />
           <LeadsByOriginChart data={leadsByOrigin} />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Operational Row: Pipeline + Activity */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
           {/* Pipeline Summary */}
-          <div className="lg:col-span-2 bg-card rounded-xl ghost-border p-6">
-            <h2 className="text-sm font-bold text-foreground mb-5 tracking-tight">Resumo do Pipeline</h2>
-            <div className="space-y-4">
+          <Card className="lg:col-span-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold">Pipeline de Vendas</CardTitle>
+              <CardDescription>{pipelineTotal} leads no pipeline</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
               {pipeline.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Nenhuma coluna com leads ainda.</p>
               ) : (
                 pipeline.map((col) => {
-                  const pct = pipelineTotal > 0 ? (col.count / pipelineTotal) * 100 : 0;
+                  const pct = pipelineTotal > 0 ? Math.round((col.count / pipelineTotal) * 100) : 0;
                   return (
-                    <div key={col.column_id} className="flex items-center gap-3">
-                      <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: col.color || "hsl(var(--primary))" }} />
-                      <span className="text-sm text-foreground w-32 truncate font-medium">{col.name}</span>
-                      <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
-                        <div className="h-2 rounded-full transition-all duration-700 ease-out" style={{ width: `${pct}%`, backgroundColor: col.color || "hsl(var(--primary))" }} />
+                    <div key={col.column_id} className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: col.color || "hsl(var(--primary))" }} />
+                          <span className="text-sm font-medium truncate max-w-[160px]">{col.name}</span>
+                        </div>
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-sm font-semibold tabular-nums">{col.count}</span>
+                          <span className="text-xs text-muted-foreground tabular-nums">{pct}%</span>
+                        </div>
                       </div>
-                      <span className="text-sm font-bold text-foreground w-8 text-right">{col.count}</span>
+                      <Progress value={pct} className="h-1.5" />
                     </div>
                   );
                 })
               )}
-            </div>
-            <div className="mt-5 pt-4 ghost-border border-t flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Total no pipeline</span>
-              <span className="text-sm font-bold text-foreground">{pipelineTotal} leads</span>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Recent Activity */}
-          <div className="bg-card rounded-xl ghost-border p-6">
-            <h2 className="text-sm font-bold text-foreground mb-5 flex items-center gap-2 tracking-tight">
-              <Activity className="h-4 w-4 text-primary" /> Atividades Recentes
-            </h2>
-            <div className="space-y-3">
-              {recentActivity.length > 0 ? recentActivity.map((a, i) => (
-                <div key={i} className="flex gap-3 group">
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2">
+                <Activity className="h-4 w-4 text-primary" />
+                <CardTitle className="text-sm font-semibold">Atividades Recentes</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {recentActivity.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhuma atividade recente</p>
+              ) : recentActivity.map((a, i) => (
+                <div key={i} className="flex gap-3">
                   <div className="flex flex-col items-center">
                     <div className={`mt-1.5 h-2 w-2 rounded-full shrink-0 ${typeColors[a.type] || "bg-primary"}`} />
                     {i < recentActivity.length - 1 && <div className="w-px flex-1 bg-border mt-1" />}
                   </div>
-                  <div className="pb-3">
-                    <p className="text-sm text-foreground group-hover:text-primary transition-colors">{a.content}</p>
+                  <div className="pb-3 min-w-0">
+                    <p className="text-sm text-foreground line-clamp-2">{a.content}</p>
                     <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                      <Clock className="h-3 w-3" /> {formatRelativeTime(a.created_at)}
+                      <Clock className="h-3 w-3 shrink-0" /> {formatRelativeTime(a.created_at)}
                     </p>
                   </div>
                 </div>
-              )) : (
-                <p className="text-sm text-muted-foreground">Nenhuma atividade recente</p>
-              )}
-            </div>
-          </div>
+              ))}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Pending Tasks */}
-        <div className="bg-card rounded-xl ghost-border p-6">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-sm font-bold text-foreground tracking-tight">Tarefas Pendentes</h2>
-            <span className="text-[11px] text-muted-foreground">{stats?.tasks_pending ?? 0} pendentes</span>
-          </div>
-          <div className="space-y-2">
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-sm font-semibold">Tarefas Pendentes</CardTitle>
+                <CardDescription>{stats?.tasks_pending ?? 0} pendentes · {stats?.tasks_overdue ?? 0} atrasadas</CardDescription>
+              </div>
+              <CheckSquare className="h-4 w-4 text-primary" />
+            </div>
+          </CardHeader>
+          <CardContent>
             {pendingTasks.length === 0 ? (
               <p className="text-sm text-muted-foreground">Sem tarefas pendentes.</p>
-            ) : pendingTasks.map((task) => (
-              <div key={task.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors">
-                <div className="flex items-center gap-3">
-                  <Checkbox
-                    className="h-4 w-4 shrink-0"
-                    checked={false}
-                    onCheckedChange={() => openCompleteTask(task.id)}
-                  />
-                  <div>
-                    <span className="text-sm text-foreground font-medium">{task.title}</span>
-                    {task.lead_name && (
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
-                        {task.lead_name}{task.lead_company ? ` · ${task.lead_company}` : ""}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {task.status === "overdue" && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-destructive/15 text-destructive font-medium">Atrasada</span>
-                  )}
-                  {task.due_date && <span className="text-xs text-muted-foreground">{formatShortDate(task.due_date)}</span>}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+            ) : (
+              <ul className="space-y-2">
+                {pendingTasks.map((task) => (
+                  <li key={task.id} className="flex items-center justify-between rounded-lg border px-3 py-2.5 hover:bg-accent/30 transition-colors">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Checkbox
+                        className="h-4 w-4 shrink-0"
+                        checked={false}
+                        onCheckedChange={() => openCompleteTask(task.id)}
+                      />
+                      <div className="min-w-0">
+                        <span className="text-sm font-medium text-foreground truncate block">{task.title}</span>
+                        {task.lead_name && (
+                          <p className="text-[11px] text-muted-foreground truncate">
+                            {task.lead_name}{task.lead_company ? ` · ${task.lead_company}` : ""}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      {task.status === "overdue" && (
+                        <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Atrasada</Badge>
+                      )}
+                      {task.due_date && (
+                        <span className="text-xs text-muted-foreground">{formatShortDate(task.due_date)}</span>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+
       </div>
 
       <CompleteTaskDialog

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -61,6 +62,19 @@ export default function SDRSettingsPage() {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
+    const min = Number(delayMin);
+    const max = Number(delayMax);
+    const limit = Number(dailyLimit);
+
+    if (!Number.isFinite(limit) || limit < 1 || limit > 200) {
+      toast.error('Informe um limite diário entre 1 e 200.');
+      return;
+    }
+    if (!Number.isFinite(min) || !Number.isFinite(max) || min < 1 || max < min) {
+      toast.error('Informe um delay máximo maior ou igual ao mínimo.');
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -68,9 +82,9 @@ export default function SDRSettingsPage() {
         method: 'PUT',
         body: JSON.stringify({
           enabled,
-          daily_limit: Number(dailyLimit),
-          delay_min_minutes: Number(delayMin),
-          delay_max_minutes: Number(delayMax),
+          daily_limit: limit,
+          delay_min_minutes: min,
+          delay_max_minutes: max,
           send_window_start: startHour,
           send_window_end: endHour,
         }),
@@ -85,33 +99,31 @@ export default function SDRSettingsPage() {
   }
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold">Configurações SDR</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Controle de envio automático, horários e limites diários.
-        </p>
-      </div>
+    <AppLayout title="Configurações SDR" subtitle="Controle de envio automático, horários e limites diários.">
+    <div className="max-w-2xl mx-auto">
 
       <form onSubmit={handleSave} className="space-y-5">
-        <Card>
+        <Card aria-busy={loading}>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Motor SDR</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium">Prospecção automática ativa</p>
+                <Label htmlFor="sdr-enabled" className="text-sm font-medium">Prospecção Automática Ativa</Label>
                 <p className="text-xs text-muted-foreground">Liga o envio automático de mensagens via WhatsApp</p>
               </div>
-              <Switch checked={enabled} onCheckedChange={setEnabled} />
+              <Switch id="sdr-enabled" checked={enabled} onCheckedChange={setEnabled} />
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="daily-limit">Limite diário de novas conversas</Label>
               <Input
                 id="daily-limit"
+                name="daily_limit"
                 type="number"
+                inputMode="numeric"
+                autoComplete="off"
                 min={1}
                 max={200}
                 value={dailyLimit}
@@ -132,7 +144,10 @@ export default function SDRSettingsPage() {
                 <Label htmlFor="delay-min">Mínimo (minutos)</Label>
                 <Input
                   id="delay-min"
+                  name="delay_min_minutes"
                   type="number"
+                  inputMode="numeric"
+                  autoComplete="off"
                   min={1}
                   value={delayMin}
                   onChange={(e) => setDelayMin(e.target.value)}
@@ -142,7 +157,10 @@ export default function SDRSettingsPage() {
                 <Label htmlFor="delay-max">Máximo (minutos)</Label>
                 <Input
                   id="delay-max"
+                  name="delay_max_minutes"
                   type="number"
+                  inputMode="numeric"
+                  autoComplete="off"
                   min={1}
                   value={delayMax}
                   onChange={(e) => setDelayMax(e.target.value)}
@@ -165,7 +183,9 @@ export default function SDRSettingsPage() {
                 <Label htmlFor="start-hour">Início</Label>
                 <Input
                   id="start-hour"
+                  name="send_window_start"
                   type="time"
+                  autoComplete="off"
                   value={startHour}
                   onChange={(e) => setStartHour(e.target.value)}
                 />
@@ -174,7 +194,9 @@ export default function SDRSettingsPage() {
                 <Label htmlFor="end-hour">Fim</Label>
                 <Input
                   id="end-hour"
+                  name="send_window_end"
                   type="time"
+                  autoComplete="off"
                   value={endHour}
                   onChange={(e) => setEndHour(e.target.value)}
                 />
@@ -188,10 +210,11 @@ export default function SDRSettingsPage() {
 
         <div className="flex justify-end">
           <Button type="submit" disabled={saving}>
-            {loading ? 'Carregando...' : saving ? 'Salvando...' : 'Salvar configurações'}
+            {loading ? 'Carregando…' : saving ? 'Salvando…' : 'Salvar Configurações'}
           </Button>
         </div>
       </form>
     </div>
+    </AppLayout>
   );
 }

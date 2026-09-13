@@ -1,9 +1,12 @@
 import {
   LayoutDashboard, MessageSquare, Kanban, CheckSquare, Zap, Brain, BookOpen, Megaphone, Send,
   BarChart3, Plug, HelpCircle, LogOut, Bot, Settings, ShieldCheck, FileText, Clock, Upload, Sparkles,
-  Target, Radio, Phone, Mail, Smartphone, Camera, Globe, Radar, GitBranch, SlidersHorizontal,
+  Target, Radio, Phone, Mail, Radar, GitBranch, SlidersHorizontal,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import type { ComponentType } from "react";
+import { siWhatsapp, siInstagram, siFacebook } from "simple-icons";
+import { SimpleIcon } from "@/components/ui/simple-icon";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,10 +23,20 @@ import { CommandPaletteTrigger } from "@/components/layout/CommandPaletteTrigger
 import upixelIconLight from "@/assets/upixel_icon_light.png";
 import upixelIconDark from "@/assets/upixel_icon_dark.png";
 
+const WhatsAppIcon = ({ className }: { className?: string }) => (
+  <SimpleIcon icon={siWhatsapp} className={className} />
+);
+const InstagramIcon = ({ className }: { className?: string }) => (
+  <SimpleIcon icon={siInstagram} className={className} />
+);
+const FacebookIcon = ({ className }: { className?: string }) => (
+  <SimpleIcon icon={siFacebook} className={className} />
+);
+
 type NavLeaf = {
   title: string;
   url: string;
-  icon: LucideIcon;
+  icon: LucideIcon | ComponentType<{ className?: string }>;
   masterOnly?: boolean;
   /** Optional badge count (e.g. unread inbox). null/undefined = no badge. */
   badge?: number | null;
@@ -54,7 +67,7 @@ const dailyLinks: NavLeaf[] = [
 
 // "Trabalho com leads" — Inbox e Funil, com Marketing e Automações logo abaixo.
 const workLinks: NavLeaf[] = [
-  { title: "Inbox", url: "/inbox", icon: MessageSquare },
+  { title: "Inbox Unificado", url: "/inbox", icon: MessageSquare },
   { title: "Funil de Vendas", url: "/crm", icon: Kanban },
 ];
 
@@ -72,11 +85,12 @@ const navGroups: NavGroup[] = [
     title: "Canais",
     icon: Radio,
     items: [
-      { title: "WhatsApp", url: "/whatsapp", icon: Smartphone },
-      { title: "AI Chat", url: "/channels/ai-chat", icon: Bot },
+      { title: "Inbox Unificado", url: "/inbox", icon: MessageSquare },
+      { title: "WhatsApp", url: "/whatsapp", icon: WhatsAppIcon },
+      { title: "Inteligência", url: "/intelligence", icon: Brain },
       { title: "E-mail", url: "/channels/email", icon: Mail },
-      { title: "Facebook", url: "/facebook-page", icon: Globe },
-      { title: "Instagram", url: "/instagram", icon: Camera },
+      { title: "Instagram", url: "/instagram", icon: InstagramIcon },
+      { title: "Facebook", url: "/facebook-page", icon: FacebookIcon },
       { title: "VoIP", url: "/channels/voip", icon: Phone },
     ],
   },
@@ -108,7 +122,6 @@ const navGroups: NavGroup[] = [
     icon: Bot,
     items: [
       { title: "Automações", url: "/automations", icon: Zap },
-      { title: "Inteligência", url: "/intelligence", icon: Brain },
       { title: "Biblioteca", url: "/alexandria/rag", icon: BookOpen },
     ],
   },
