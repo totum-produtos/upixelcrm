@@ -20,6 +20,7 @@ import SignupPage from "./pages/SignupPage";
 import TenantNotFoundPage from "./pages/TenantNotFoundPage";
 import WorkspaceLoginPage from "./pages/WorkspaceLoginPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
+import NotFoundPage from "./pages/errors/NotFoundPage";
 
 // Lazy: páginas internas — code-split por rota.
 const InboxPage = lazy(() => import("./pages/InboxPage"));
@@ -66,6 +67,14 @@ const SDRSettingsPage = lazy(() => import("./pages/prospecting/SDRSettingsPage")
 const VoIPPage = lazy(() => import("./pages/channels/VoIPPage"));
 const ChannelsPage = lazy(() => import("./pages/channels/ChannelsPage"));
 const EmailPage = lazy(() => import("./pages/channels/EmailPage"));
+const DashboardGeneralPage = lazy(() => import("./pages/DashboardGeneralPage"));
+const ReportsSalesPage = lazy(() => import("./pages/ReportsSalesPage"));
+const LoginPageV2 = lazy(() => import("./pages/LoginPageV2"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
+const InvoicePage = lazy(() => import("./pages/InvoicePage"));
+const FileManagerPage = lazy(() => import("./pages/FileManagerPage"));
+const RolesPage = lazy(() => import("./pages/RolesPage"));
+const MetasCalendarPage = lazy(() => import("./pages/MetasCalendarPage"));
 
 // Privacy Policy / Terms / Data Deletion Status são servidos como HTML estático
 // pelo nginx (public/privacy-policy/index.html, etc.) — Meta crawler precisa
@@ -150,10 +159,12 @@ function AppRoutes() {
               <Suspense fallback={<RouteFallback />}>
               <Routes>
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/login-v2" element={<LoginPageV2 />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/auth/callback" element={<AuthCallbackPage />} />
                 <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-                {/* /dashboard é URL bookmarcável esperada — redireciona pra raiz */}
-                <Route path="/dashboard" element={<Navigate to="/" replace />} />
+                {/* /dashboard aponta pro novo dashboard geral */}
+                <Route path="/dashboard" element={<ProtectedRoute><DashboardGeneralPage /></ProtectedRoute>} />
                 <Route path="/inbox" element={<ProtectedRoute><InboxPage /></ProtectedRoute>} />
                 <Route path="/crm" element={<ProtectedRoute><CRMPage /></ProtectedRoute>} />
                 <Route path="/leads/:id" element={<ProtectedRoute><LeadProfilePage /></ProtectedRoute>} />
@@ -202,8 +213,13 @@ function AppRoutes() {
                 <Route path="/novidades" element={<ProtectedRoute><NovidadesPage /></ProtectedRoute>} />
                 <Route path="/metas" element={<ProtectedRoute><GoalsPage /></ProtectedRoute>} />
                 <Route path="/metas/configurar" element={<ProtectedRoute requiredPermission="settings.view"><GoalsConfigPage /></ProtectedRoute>} />
+                <Route path="/metas/calendario" element={<ProtectedRoute><MetasCalendarPage /></ProtectedRoute>} />
                 <Route path="/metas/:id" element={<ProtectedRoute><GoalDetailPage /></ProtectedRoute>} />
-                <Route path="*" element={<NotFound />} />
+                <Route path="/reports/sales" element={<ProtectedRoute><ReportsSalesPage /></ProtectedRoute>} />
+                <Route path="/invoices" element={<ProtectedRoute><InvoicePage /></ProtectedRoute>} />
+                <Route path="/files" element={<ProtectedRoute><FileManagerPage /></ProtectedRoute>} />
+                <Route path="/roles" element={<ProtectedRoute><RolesPage /></ProtectedRoute>} />
+                <Route path="*" element={<NotFoundPage />} />
               </Routes>
               </Suspense>
               <PwaInstallPrompt />
