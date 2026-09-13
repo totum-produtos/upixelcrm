@@ -2,6 +2,7 @@ import {
   LayoutDashboard, MessageSquare, Kanban, CheckSquare, Zap, Brain, BookOpen, Megaphone, Send,
   BarChart3, Plug, HelpCircle, LogOut, Bot, Settings, ShieldCheck, FileText, Clock, Upload, Sparkles,
   Target, Radio, Phone, Mail, Radar, GitBranch, SlidersHorizontal,
+  TrendingUp, Receipt, FolderOpen, Shield, CalendarDays,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { ComponentType } from "react";
@@ -59,10 +60,17 @@ type NavGroup = {
  */
 
 // "Meu dia" — o que se abre para saber onde eu estou.
+// Nota: Metas é renderizado como TreeFolder separadamente para suportar subitens.
 const dailyLinks: NavLeaf[] = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Metas", url: "/metas", icon: Target },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Resumo de Vendas", url: "/reports/sales", icon: TrendingUp },
   { title: "Tarefas", url: "/tasks", icon: CheckSquare },
+];
+
+// Subitens de Metas (renderizados como TreeFolder)
+const metasSubLinks: NavLeaf[] = [
+  { title: "Metas", url: "/metas", icon: Target },
+  { title: "Calendario", url: "/metas/calendario", icon: CalendarDays },
 ];
 
 // "Trabalho com leads" — Inbox e Funil, com Marketing e Automações logo abaixo.
@@ -73,9 +81,12 @@ const workLinks: NavLeaf[] = [
 
 // Setup — uso esporádico, desce para o fim.
 const setupLinks: NavLeaf[] = [
-  { title: "Integrações", url: "/integrations", icon: Plug },
+  { title: "Faturas", url: "/invoices", icon: Receipt },
+  { title: "Arquivos", url: "/files", icon: FolderOpen },
+  { title: "Papeis", url: "/roles", icon: Shield },
+  { title: "Integracoes", url: "/integrations", icon: Plug },
   { title: "Importar", url: "/import", icon: Upload },
-  { title: "Configurações", url: "/settings", icon: Settings },
+  { title: "Configuracoes", url: "/settings", icon: Settings },
 ];
 
 // Grupos secundários — itens usados com menos frequência, agrupados por domínio.
@@ -173,7 +184,7 @@ export function AppSidebar() {
   };
 
   // O id de cada TreeItem é a própria rota, então selecionar = navegar.
-  const allLeaves = [...dailyLinks, ...workLinks, ...setupLinks, ...masterLinks,
+  const allLeaves = [...dailyLinks, ...metasSubLinks, ...workLinks, ...setupLinks, ...masterLinks,
     ...navGroups.flatMap((g) => g.items)];
   const selectedId =
     allLeaves.filter((leaf) => isLeafActive(leaf.url, location.pathname))
@@ -235,6 +246,7 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu className="space-y-0.5">
                 {dailyLinks.map(renderCollapsedLink)}
+                {metasSubLinks.slice(0, 1).map(renderCollapsedLink)}
                 {workLinks.map(renderCollapsedLink)}
                 {navGroups.map((group) => {
                   const visibleItems = group.items.filter(canSeeItem);
@@ -271,7 +283,17 @@ export function AppSidebar() {
             onSelect={(url) => navigate(url)}
             className="px-0"
           >
-            <TreeSection title="Meu dia">{dailyLinks.map(renderTreeItem)}</TreeSection>
+            <TreeSection title="Meu dia">
+              {dailyLinks.map(renderTreeItem)}
+              <TreeFolder
+                id="metas-group"
+                label="Metas"
+                icon={Target}
+                defaultExpanded={metasSubLinks.some((l) => isLeafActive(l.url, location.pathname))}
+              >
+                {metasSubLinks.map(renderTreeItem)}
+              </TreeFolder>
+            </TreeSection>
 
             <TreeSection title="Leads">
               {workLinks.map(renderTreeItem)}
