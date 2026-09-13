@@ -10,7 +10,7 @@ const STORAGE_KEY = "upixel-preferences";
 
 export type ThemeMode = "light" | "dark" | "system";
 export type FontFamily = "inter" | "geist" | "nunito-sans";
-export type ThemePreset = "light" | "dark";
+export type ThemePreset = "bw-light" | "bw-dark";
 export type PageLayout = "centered" | "full";
 export type NavbarBehavior = "sticky" | "scroll";
 export type SidebarStyle = "inset" | "sidebar" | "floating";
@@ -29,7 +29,7 @@ export interface Preferences {
 const DEFAULTS: Preferences = {
   themeMode: "system",
   fontFamily: "inter",
-  themePreset: "dark",
+  themePreset: "bw-dark",
   pageLayout: "full",
   navbarBehavior: "sticky",
   sidebarStyle: "sidebar",
@@ -46,7 +46,14 @@ function loadPrefs(): Preferences {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return { ...DEFAULTS };
-    return { ...DEFAULTS, ...JSON.parse(raw) };
+    const parsed = JSON.parse(raw) as Partial<Preferences> & { themePreset?: string };
+    const themePreset =
+      parsed.themePreset === "light"
+        ? "bw-light"
+        : parsed.themePreset === "dark"
+          ? "bw-dark"
+          : parsed.themePreset;
+    return { ...DEFAULTS, ...parsed, themePreset: themePreset as ThemePreset };
   } catch {
     return { ...DEFAULTS };
   }
@@ -99,6 +106,9 @@ export function PreferencesPanel() {
   const updatePref = useCallback(<K extends keyof Preferences>(key: K, value: Preferences[K]) => {
     setPrefs((prev) => {
       const next = { ...prev, [key]: value };
+      if (key === "themePreset") {
+        next.themeMode = value === "bw-light" ? "light" : "dark";
+      }
       savePrefs(next);
       applyPrefs(next);
       return next;
@@ -190,8 +200,8 @@ export function PreferencesPanel() {
               </Label>
               <div className="grid grid-cols-2 gap-2">
                 {([
-                  { value: "light", label: "Claro", bg: "bg-white border-border" },
-                  { value: "dark", label: "Escuro", bg: "bg-zinc-950 border-zinc-700" },
+                  { value: "bw-light", label: "PB Claro", bg: "bg-white border-zinc-200" },
+                  { value: "bw-dark", label: "PB Escuro", bg: "bg-zinc-950 border-zinc-700" },
                 ] as { value: ThemePreset; label: string; bg: string }[]).map((preset) => (
                   <button
                     key={preset.value}

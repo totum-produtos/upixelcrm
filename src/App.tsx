@@ -175,7 +175,8 @@ function AppRoutes() {
                 <Route path="/automations/builder/:id/runs" element={<ProtectedRoute requiredPermission="automations.view"><AutomationRunsPage /></ProtectedRoute>} />
                 <Route path="/intelligence" element={<ProtectedRoute requiredPermission="intelligence.view"><IntelligencePage /></ProtectedRoute>} />
                 <Route path="/campaigns" element={<ProtectedRoute><CampaignsPage /></ProtectedRoute>} />
-                <Route path="/reports" element={<ProtectedRoute requiredPermission="reports.view"><ReportsPage /></ProtectedRoute>} />
+                <Route path="/reports" element={<ProtectedRoute requiredPermission="reports.view"><ReportsSalesPage /></ProtectedRoute>} />
+                <Route path="/reports/overview" element={<ProtectedRoute requiredPermission="reports.view"><ReportsPage /></ProtectedRoute>} />
                 <Route path="/sla" element={<ProtectedRoute requiredPermission="reports.view"><SLAPage /></ProtectedRoute>} />
                 <Route path="/integrations" element={<ProtectedRoute requiredPermission="settings.view"><IntegrationsPage /></ProtectedRoute>} />
                 <Route path="/google" element={<ProtectedRoute><GooglePage /></ProtectedRoute>} />

@@ -51,7 +51,16 @@ export default function InvoicePage() {
   const totalVencido = mockInvoices.filter((i) => i.status === "vencido").reduce((s, i) => s + i.valor, 0);
 
   return (
-    <AppLayout title="Faturas">
+    <AppLayout
+      title="Faturas"
+      subtitle="Cobranças, vencimentos e histórico financeiro do workspace"
+      actions={
+        <Button size="sm" className="gap-1.5">
+          <Plus className="h-4 w-4" />
+          Nova fatura
+        </Button>
+      }
+    >
       <div className="p-6 space-y-6 max-w-7xl mx-auto">
         {/* Summary cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -86,10 +95,6 @@ export default function InvoicePage() {
                     className="h-8 pl-8 w-48 text-sm"
                   />
                 </div>
-                <Button size="sm" className="h-8 gap-1.5 text-xs">
-                  <Plus className="h-3.5 w-3.5" />
-                  Nova Fatura
-                </Button>
               </div>
             </div>
           </CardHeader>

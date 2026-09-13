@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight, Target } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const MONTHS = [
-  "Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho",
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
 ];
 const DAYS_SHORT = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
@@ -22,7 +22,7 @@ const mockEventos: MetaEvento[] = [
   { dia: 3, titulo: "Meta Receita Q3", status: "ativo" },
   { dia: 5, titulo: "Leads Qualificados", status: "concluido" },
   { dia: 10, titulo: "NPS Setembro", status: "pendente" },
-  { dia: 14, titulo: "Conversao Funil", status: "ativo" },
+  { dia: 14, titulo: "Conversão Funil", status: "ativo" },
   { dia: 15, titulo: "Campanha Black Friday", status: "pendente" },
   { dia: 20, titulo: "Review Mensal", status: "atrasado" },
   { dia: 25, titulo: "Meta Anual Receita", status: "ativo" },
@@ -45,7 +45,7 @@ const statusDot: Record<MetaEvento["status"], string> = {
 
 const statusLabel: Record<MetaEvento["status"], string> = {
   ativo: "Ativo",
-  concluido: "Concluido",
+  concluido: "Concluído",
   atrasado: "Atrasado",
   pendente: "Pendente",
 };
@@ -89,18 +89,19 @@ export default function MetasCalendarPage() {
   while (cells.length % 7 !== 0) cells.push(null);
 
   return (
-    <AppLayout title="Calendario de Metas">
+    <AppLayout
+      title="Calendário de Metas"
+      subtitle="Agenda mensal de metas, revisões e marcos comerciais"
+      actions={
+        <Button variant="outline" size="sm" asChild className="gap-1.5">
+          <Link to="/metas">
+            <ChevronLeft className="h-4 w-4" />
+            Metas
+          </Link>
+        </Button>
+      }
+    >
       <div className="p-6 space-y-6 max-w-5xl mx-auto">
-        {/* Nav back */}
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" asChild className="h-8 text-xs gap-1.5">
-            <Link to="/metas">
-              <ChevronLeft className="h-3.5 w-3.5" />
-              Voltar para Metas
-            </Link>
-          </Button>
-        </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Calendar */}
           <Card className="lg:col-span-2">

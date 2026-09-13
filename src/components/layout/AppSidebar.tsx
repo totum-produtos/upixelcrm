@@ -63,7 +63,7 @@ type NavGroup = {
 // Nota: Metas é renderizado como TreeFolder separadamente para suportar subitens.
 const dailyLinks: NavLeaf[] = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Resumo de Vendas", url: "/reports/sales", icon: TrendingUp },
+  { title: "Resumo de Vendas", url: "/reports", icon: TrendingUp },
   { title: "Tarefas", url: "/tasks", icon: CheckSquare },
 ];
 
@@ -123,7 +123,7 @@ const navGroups: NavGroup[] = [
       { title: "Campanhas", url: "/campaigns", icon: Megaphone },
       { title: "Disparos", url: "/whatsapp/broadcast", icon: Send },
       { title: "Templates WhatsApp", url: "/whatsapp/templates", icon: FileText },
-      { title: "Relatórios", url: "/reports", icon: BarChart3 },
+      { title: "Relatórios", url: "/reports/overview", icon: BarChart3 },
       { title: "SLA & Atendimento", url: "/sla", icon: Clock },
     ],
   },

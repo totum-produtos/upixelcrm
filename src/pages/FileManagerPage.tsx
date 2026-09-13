@@ -57,7 +57,7 @@ const categorias = [
   { id: "todos", label: "Todos", icon: File, count: mockFiles.length },
   { id: "imagem", label: "Imagens", icon: Image, count: mockFiles.filter((f) => f.tipo === "imagem").length },
   { id: "documento", label: "Documentos", icon: FileText, count: mockFiles.filter((f) => f.tipo === "documento").length },
-  { id: "video", label: "Videos", icon: Film, count: mockFiles.filter((f) => f.tipo === "video").length },
+  { id: "video", label: "Vídeos", icon: Film, count: mockFiles.filter((f) => f.tipo === "video").length },
   { id: "arquivo", label: "Arquivos ZIP", icon: Archive, count: mockFiles.filter((f) => f.tipo === "arquivo").length },
 ];
 
@@ -72,12 +72,21 @@ export default function FileManagerPage() {
   });
 
   return (
-    <AppLayout title="Arquivos">
+    <AppLayout
+      title="Arquivos"
+      subtitle="Biblioteca de documentos, propostas, imagens e materiais comerciais"
+      actions={
+        <Button size="sm" className="gap-1.5">
+          <Upload className="h-4 w-4" />
+          Upload
+        </Button>
+      }
+    >
       <div className="p-6 h-full">
-        <div className="flex gap-6 max-w-7xl mx-auto">
+        <div className="flex max-w-7xl flex-col gap-6 mx-auto lg:flex-row">
           {/* Sidebar categorias */}
-          <aside className="w-48 shrink-0">
-            <nav className="space-y-1">
+          <aside className="w-full shrink-0 lg:w-56">
+            <nav className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-1">
               {categorias.map((cat) => {
                 const Icon = cat.icon;
                 const active = categoriaAtiva === cat.id;
@@ -103,8 +112,8 @@ export default function FileManagerPage() {
               })}
             </nav>
 
-            <div className="mt-6 rounded-lg border border-dashed p-4 text-center space-y-2">
-              <div className="text-xs text-muted-foreground">Espaco utilizado</div>
+            <div className="mt-4 rounded-lg border border-dashed p-4 text-center space-y-2 lg:mt-6">
+              <div className="text-xs text-muted-foreground">Espaço utilizado</div>
               <div className="h-1.5 w-full rounded-full bg-muted">
                 <div className="h-1.5 w-3/5 rounded-full bg-primary" />
               </div>
@@ -124,10 +133,6 @@ export default function FileManagerPage() {
                   className="h-8 pl-8 w-56 text-sm"
                 />
               </div>
-              <Button size="sm" className="h-8 gap-1.5 text-xs">
-                <Upload className="h-3.5 w-3.5" />
-                Upload
-              </Button>
             </div>
 
             {/* File grid */}

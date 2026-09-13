@@ -22,7 +22,7 @@ const mockRoles: Role[] = [
     id: 1,
     nome: "Master",
     slug: "master",
-    descricao: "Acesso total ao sistema, sem restricoes.",
+    descricao: "Acesso total ao sistema, sem restrições.",
     usuarios: 2,
     permissoes: ["todos os modulos", "usuarios", "configuracoes", "faturamento", "relatorios", "integracoes"],
   },
@@ -30,7 +30,7 @@ const mockRoles: Role[] = [
     id: 2,
     nome: "Supervisor",
     slug: "supervisor",
-    descricao: "Gerencia equipes e tem acesso a relatorios e configuracoes.",
+    descricao: "Gerencia equipes e tem acesso a relatórios e configurações.",
     usuarios: 5,
     permissoes: ["dashboard", "leads", "relatorios", "usuarios", "automacoes", "tarefas"],
   },
@@ -38,7 +38,7 @@ const mockRoles: Role[] = [
     id: 3,
     nome: "Vendedor",
     slug: "vendedor",
-    descricao: "Acesso ao CRM, inbox, leads e tarefas proprias.",
+    descricao: "Acesso ao CRM, inbox, leads e tarefas próprias.",
     usuarios: 18,
     permissoes: ["dashboard", "inbox", "leads", "tarefas", "contatos"],
   },
@@ -46,7 +46,7 @@ const mockRoles: Role[] = [
     id: 4,
     nome: "Atendente",
     slug: "atendente",
-    descricao: "Atende conversas e registra interacoes com clientes.",
+    descricao: "Atende conversas e registra interações com clientes.",
     usuarios: 12,
     permissoes: ["inbox", "contatos", "tarefas"],
   },
@@ -71,17 +71,22 @@ export default function RolesPage() {
   const [roles] = useState<Role[]>(mockRoles);
 
   return (
-    <AppLayout title="Papeis e Permissoes">
+    <AppLayout
+      title="Papéis e Permissões"
+      subtitle="Controle de acesso por função, módulo e responsabilidade"
+      actions={
+        <Button size="sm" className="gap-1.5">
+          <Plus className="h-4 w-4" />
+          Novo papel
+        </Button>
+      }
+    >
       <div className="p-6 space-y-6 max-w-5xl mx-auto">
-        <div className="flex items-center justify-between">
+        <div>
           <div>
-            <h2 className="text-base font-semibold">Papeis</h2>
-            <p className="text-sm text-muted-foreground">{roles.length} papeis configurados</p>
+            <h2 className="text-base font-semibold">Papéis</h2>
+            <p className="text-sm text-muted-foreground">{roles.length} papéis configurados</p>
           </div>
-          <Button size="sm" className="gap-1.5 text-xs h-8">
-            <Plus className="h-3.5 w-3.5" />
-            Novo Papel
-          </Button>
         </div>
 
         <div className="space-y-3">
