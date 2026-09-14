@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
-import { Settings, RotateCcw, X } from "lucide-react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "upixel-preferences";
 
@@ -28,7 +28,7 @@ export interface Preferences {
 
 const DEFAULTS: Preferences = {
   themeMode: "system",
-  fontFamily: "inter",
+  fontFamily: "geist",
   themePreset: "bw-dark",
   pageLayout: "full",
   navbarBehavior: "sticky",
@@ -41,6 +41,17 @@ const FONT_MAP: Record<FontFamily, string> = {
   geist: "'Geist', sans-serif",
   "nunito-sans": "'Nunito Sans', sans-serif",
 };
+
+const themePresetOptions: { value: ThemePreset; label: string; dot: string }[] = [
+  { value: "bw-light", label: "Black / White Light", dot: "bg-white border border-zinc-300" },
+  { value: "bw-dark", label: "Black / White Dark", dot: "bg-zinc-950" },
+];
+
+const fontOptions: { value: FontFamily; label: string }[] = [
+  { value: "geist", label: "Geist" },
+  { value: "inter", label: "Inter" },
+  { value: "nunito-sans", label: "Nunito Sans" },
+];
 
 function loadPrefs(): Preferences {
   try {
@@ -66,7 +77,6 @@ function savePrefs(prefs: Preferences) {
 function applyPrefs(prefs: Preferences) {
   const root = document.documentElement;
 
-  // Theme mode
   root.classList.remove("light", "dark");
   if (prefs.themeMode === "system") {
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -75,29 +85,53 @@ function applyPrefs(prefs: Preferences) {
     root.classList.add(prefs.themeMode);
   }
 
-  // Font family
   root.style.setProperty("--font-sans", FONT_MAP[prefs.fontFamily]);
   root.setAttribute("data-font", prefs.fontFamily);
-
-  // Theme preset
   root.setAttribute("data-theme-preset", prefs.themePreset);
-
-  // Page layout
   root.setAttribute("data-layout", prefs.pageLayout);
-
-  // Navbar behavior
   root.setAttribute("data-navbar", prefs.navbarBehavior);
-
-  // Sidebar style
   root.setAttribute("data-sidebar-style", prefs.sidebarStyle);
-
-  // Sidebar collapse mode
   root.setAttribute("data-sidebar-collapse", prefs.sidebarCollapseMode);
 }
 
-// Apply saved prefs on initial load
 const initialPrefs = loadPrefs();
 applyPrefs(initialPrefs);
+
+function SectionLabel({ children }: { children: string }) {
+  return <Label className="text-[12px] font-medium leading-none text-foreground">{children}</Label>;
+}
+
+function SegmentedControl<T extends string>({
+  value,
+  options,
+  onChange,
+}: {
+  value: T;
+  options: { value: T; label: string }[];
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div
+      className="grid h-8 overflow-hidden rounded-lg border border-border bg-background"
+      style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
+    >
+      {options.map((option, index) => (
+        <button
+          key={option.value}
+          type="button"
+          onClick={() => onChange(option.value)}
+          className={cn(
+            "h-full border-border px-2 text-[12px] font-medium text-foreground transition-colors hover:bg-muted/70",
+            index > 0 && "border-l",
+            value === option.value && "bg-muted shadow-inner",
+          )}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export function PreferencesPanel() {
   const [open, setOpen] = useState(false);
@@ -122,7 +156,6 @@ export function PreferencesPanel() {
     applyPrefs(next);
   }, []);
 
-  // Re-sync if something external changed localStorage
   useEffect(() => {
     if (open) {
       setPrefs(loadPrefs());
@@ -130,214 +163,133 @@ export function PreferencesPanel() {
   }, [open]);
 
   return (
-    <>
-      {/* Floating trigger button */}
-      <button
-        onClick={() => setOpen(true)}
-        aria-label="Preferencias do painel"
-        className="fixed bottom-6 right-6 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:opacity-90 transition-opacity"
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label="Preferences"
+          className="fixed right-4 top-4 z-50 flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-950 text-white shadow-lg transition-colors hover:bg-zinc-800"
+        >
+          <Settings className="h-4 w-4" />
+        </button>
+      </PopoverTrigger>
+
+      <PopoverContent
+        align="end"
+        side="bottom"
+        sideOffset={8}
+        className="z-[60] w-[278px] rounded-xl border border-border bg-popover p-3 text-popover-foreground shadow-xl"
       >
-        <Settings className="h-5 w-5" />
-      </button>
-
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right" className="w-80 overflow-y-auto">
-          <SheetHeader className="flex flex-row items-center justify-between pr-0">
-            <SheetTitle className="text-base">Preferencias</SheetTitle>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setOpen(false)}>
-              <X className="h-4 w-4" />
-            </Button>
-          </SheetHeader>
-
-          <div className="mt-6 space-y-6">
-            {/* Theme Mode */}
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Modo de Tema
-              </Label>
-              <div className="grid grid-cols-3 gap-1 rounded-lg border p-1">
-                {(["light", "dark", "system"] as ThemeMode[]).map((mode) => (
-                  <button
-                    key={mode}
-                    onClick={() => updatePref("themeMode", mode)}
-                    className={`rounded px-2 py-1.5 text-xs font-medium transition-colors capitalize ${
-                      prefs.themeMode === mode
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {mode === "light" ? "Claro" : mode === "dark" ? "Escuro" : "Sistema"}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Font Family */}
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Fonte
-              </Label>
-              <Select value={prefs.fontFamily} onValueChange={(v) => updatePref("fontFamily", v as FontFamily)}>
-                <SelectTrigger className="h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="inter">Inter</SelectItem>
-                  <SelectItem value="geist">Geist</SelectItem>
-                  <SelectItem value="nunito-sans">Nunito Sans</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Separator />
-
-            {/* Theme Preset */}
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Preset de Tema
-              </Label>
-              <div className="grid grid-cols-2 gap-2">
-                {([
-                  { value: "bw-light", label: "PB Claro", bg: "bg-white border-zinc-200" },
-                  { value: "bw-dark", label: "PB Escuro", bg: "bg-zinc-950 border-zinc-700" },
-                ] as { value: ThemePreset; label: string; bg: string }[]).map((preset) => (
-                  <button
-                    key={preset.value}
-                    onClick={() => updatePref("themePreset", preset.value)}
-                    className={`relative flex flex-col items-center gap-1.5 rounded-lg border-2 p-3 transition-all ${
-                      prefs.themePreset === preset.value
-                        ? "border-primary"
-                        : "border-transparent hover:border-border"
-                    }`}
-                  >
-                    <div className={`h-8 w-full rounded ${preset.bg} border`} />
-                    <span className="text-xs font-medium">{preset.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Page Layout */}
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Layout da Pagina
-              </Label>
-              <div className="grid grid-cols-2 gap-1 rounded-lg border p-1">
-                {([
-                  { value: "centered", label: "Centralizado" },
-                  { value: "full", label: "Largura Total" },
-                ] as { value: PageLayout; label: string }[]).map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => updatePref("pageLayout", opt.value)}
-                    className={`rounded px-2 py-1.5 text-xs font-medium transition-colors ${
-                      prefs.pageLayout === opt.value
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Navbar Behavior */}
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Comportamento da Navbar
-              </Label>
-              <div className="grid grid-cols-2 gap-1 rounded-lg border p-1">
-                {([
-                  { value: "sticky", label: "Fixo" },
-                  { value: "scroll", label: "Rolavel" },
-                ] as { value: NavbarBehavior; label: string }[]).map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => updatePref("navbarBehavior", opt.value)}
-                    className={`rounded px-2 py-1.5 text-xs font-medium transition-colors ${
-                      prefs.navbarBehavior === opt.value
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Sidebar Style */}
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Estilo da Sidebar
-              </Label>
-              <div className="grid grid-cols-3 gap-1 rounded-lg border p-1">
-                {(["inset", "sidebar", "floating"] as SidebarStyle[]).map((style) => (
-                  <button
-                    key={style}
-                    onClick={() => updatePref("sidebarStyle", style)}
-                    className={`rounded px-2 py-1.5 text-xs font-medium transition-colors capitalize ${
-                      prefs.sidebarStyle === style
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {style === "inset" ? "Inset" : style === "sidebar" ? "Sidebar" : "Flutuante"}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Sidebar Collapse Mode */}
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Modo de Colapso
-              </Label>
-              <div className="grid grid-cols-2 gap-1 rounded-lg border p-1">
-                {([
-                  { value: "icon", label: "Icone" },
-                  { value: "offcanvas", label: "OffCanvas" },
-                ] as { value: SidebarCollapseMode; label: string }[]).map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => updatePref("sidebarCollapseMode", opt.value)}
-                    className={`rounded px-2 py-1.5 text-xs font-medium transition-colors ${
-                      prefs.sidebarCollapseMode === opt.value
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Restore Defaults */}
-            <Button
-              variant="outline"
-              className="w-full gap-2"
-              onClick={restoreDefaults}
-            >
-              <RotateCcw className="h-4 w-4" />
-              Restaurar Padrao
-            </Button>
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <h2 className="text-[15px] font-semibold leading-none">Preferences</h2>
+            <p className="text-[12px] leading-5 text-muted-foreground">
+              Customize your dashboard layout preferences.
+            </p>
           </div>
-        </SheetContent>
-      </Sheet>
-    </>
+
+          <div className="space-y-2">
+            <SectionLabel>Theme Preset</SectionLabel>
+            <Select value={prefs.themePreset} onValueChange={(value) => updatePref("themePreset", value as ThemePreset)}>
+              <SelectTrigger className="h-8 rounded-lg text-[12px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {themePresetOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value} className="text-[12px]">
+                    <span className="inline-flex items-center gap-2">
+                      <span className={cn("h-2.5 w-2.5 rounded-full", option.dot)} />
+                      {option.label}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <SectionLabel>Fonts</SectionLabel>
+            <Select value={prefs.fontFamily} onValueChange={(value) => updatePref("fontFamily", value as FontFamily)}>
+              <SelectTrigger className="h-8 rounded-lg text-[12px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {fontOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value} className="text-[12px]">
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <SectionLabel>Theme Mode</SectionLabel>
+            <SegmentedControl
+              value={prefs.themeMode}
+              onChange={(value) => updatePref("themeMode", value)}
+              options={[
+                { value: "light", label: "Light" },
+                { value: "dark", label: "Dark" },
+                { value: "system", label: "System" },
+              ]}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <SectionLabel>Page Layout</SectionLabel>
+            <SegmentedControl
+              value={prefs.pageLayout}
+              onChange={(value) => updatePref("pageLayout", value)}
+              options={[
+                { value: "centered", label: "Centered" },
+                { value: "full", label: "Full Width" },
+              ]}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <SectionLabel>Navbar Behavior</SectionLabel>
+            <SegmentedControl
+              value={prefs.navbarBehavior}
+              onChange={(value) => updatePref("navbarBehavior", value)}
+              options={[
+                { value: "sticky", label: "Sticky" },
+                { value: "scroll", label: "Scroll" },
+              ]}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <SectionLabel>Sidebar Style</SectionLabel>
+            <SegmentedControl
+              value={prefs.sidebarStyle}
+              onChange={(value) => updatePref("sidebarStyle", value)}
+              options={[
+                { value: "inset", label: "Inset" },
+                { value: "sidebar", label: "Sidebar" },
+                { value: "floating", label: "Floating" },
+              ]}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <SectionLabel>Sidebar Collapse Mode</SectionLabel>
+            <SegmentedControl
+              value={prefs.sidebarCollapseMode}
+              onChange={(value) => updatePref("sidebarCollapseMode", value)}
+              options={[
+                { value: "icon", label: "Icon" },
+                { value: "offcanvas", label: "OffCanvas" },
+              ]}
+            />
+          </div>
+
+          <Button variant="outline" className="h-8 w-full rounded-lg text-[12px] font-medium" onClick={restoreDefaults}>
+            Restore Defaults
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
