@@ -13,7 +13,6 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 // Eager: telas de entrada (raiz, login, dashboard) e fallbacks — evita flash de loading.
 import DashboardPage from "./pages/DashboardPage";
 import LoginPage from "./pages/LoginPage";
-import NotFound from "./pages/NotFound";
 import LandingPage from "./pages/LandingPage";
 import LandingPageEN from "./pages/LandingPageEN";
 import SignupPage from "./pages/SignupPage";
@@ -163,8 +162,9 @@ function AppRoutes() {
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/auth/callback" element={<AuthCallbackPage />} />
                 <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-                {/* /dashboard aponta pro novo dashboard geral */}
-                <Route path="/dashboard" element={<ProtectedRoute><DashboardGeneralPage /></ProtectedRoute>} />
+                {/* /dashboard é URL bookmarcável esperada — redireciona pra raiz */}
+                <Route path="/dashboard" element={<Navigate to="/" replace />} />
+                <Route path="/dashboard/general" element={<ProtectedRoute><DashboardGeneralPage /></ProtectedRoute>} />
                 <Route path="/inbox" element={<ProtectedRoute><InboxPage /></ProtectedRoute>} />
                 <Route path="/crm" element={<ProtectedRoute><CRMPage /></ProtectedRoute>} />
                 <Route path="/leads/:id" element={<ProtectedRoute><LeadProfilePage /></ProtectedRoute>} />
@@ -216,10 +216,10 @@ function AppRoutes() {
                 <Route path="/metas/configurar" element={<ProtectedRoute requiredPermission="settings.view"><GoalsConfigPage /></ProtectedRoute>} />
                 <Route path="/metas/calendario" element={<ProtectedRoute><MetasCalendarPage /></ProtectedRoute>} />
                 <Route path="/metas/:id" element={<ProtectedRoute><GoalDetailPage /></ProtectedRoute>} />
-                <Route path="/reports/sales" element={<ProtectedRoute><ReportsSalesPage /></ProtectedRoute>} />
+                <Route path="/reports/sales" element={<ProtectedRoute requiredPermission="reports.view"><ReportsSalesPage /></ProtectedRoute>} />
                 <Route path="/invoices" element={<ProtectedRoute><InvoicePage /></ProtectedRoute>} />
                 <Route path="/files" element={<ProtectedRoute><FileManagerPage /></ProtectedRoute>} />
-                <Route path="/roles" element={<ProtectedRoute><RolesPage /></ProtectedRoute>} />
+                <Route path="/roles" element={<ProtectedRoute requiredPermission="settings.view"><RolesPage /></ProtectedRoute>} />
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>
               </Suspense>
