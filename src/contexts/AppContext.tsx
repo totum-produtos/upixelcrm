@@ -26,7 +26,6 @@ interface AppState {
   automations: Automation[];
   complexAutomations: ComplexAutomation[];
   timeline: TimelineEvent[];
-  globalTags: string[];
   leadCountByPipeline: Record<string, number>;
   loading: boolean;
 
@@ -61,9 +60,6 @@ interface AppState {
   addBasicAutomation: (data: Partial<Automation>) => Promise<void>;
   updateBasicAutomation: (id: string, data: Partial<Automation>) => Promise<void>;
 
-  addGlobalTag: (tag: string) => Promise<void>;
-  deleteGlobalTag: (tag: string) => Promise<void>;
-
   updatePipeline: (id: string, data: Partial<Pipeline>) => Promise<void>;
   deletePipeline: (id: string) => Promise<void>;
   refreshData: () => Promise<void>;
@@ -91,7 +87,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [automations, setAutomations] = useState<Automation[]>([]);
   const [complexAutomations, setComplexAutomations] = useState<ComplexAutomation[]>([]);
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
-  const [globalTags, setGlobalTags] = useState<string[]>(["Hot", "Warm", "Cold", "Enterprise", "Agência"]);
   const [leadCountByPipeline, setLeadCountByPipeline] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
 
@@ -743,17 +738,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toast.success("Automação salva!");
   }, []);
 
-  const addGlobalTag = useCallback(async (tag: string) => {
-    if (!tag.trim() || globalTags.includes(tag.trim())) return;
-    setGlobalTags(prev => [...prev, tag.trim()]);
-    toast.success("Tag criada globalmente");
-  }, [globalTags]);
-
-  const deleteGlobalTag = useCallback(async (tag: string) => {
-    setGlobalTags(prev => prev.filter(t => t !== tag));
-    toast.success("Tag removida da lista global");
-  }, []);
-
   // AUTOMATION ENGINE
   const runAction = useCallback(async (leadId: string, action: Automation["actions"][0]) => {
     const lead = leads.find(l => l.id === leadId);
@@ -844,7 +828,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   return (
     <AppContext.Provider value={{
-      leads, pipelines, columns, currentPipelineId, tasks, automations, complexAutomations, timeline, globalTags, loading,
+      leads, pipelines, columns, currentPipelineId, tasks, automations, complexAutomations, timeline, loading,
       leadCountByPipeline,
       setPipeline: setCurrentPipelineId, addPipeline, updatePipeline, deletePipeline,
       addLead, updateLead, deleteLead, moveLead, moveLeadToPipeline,
@@ -852,7 +836,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addColumn, updateColumn, deleteColumn, reorderColumns, addTimelineEvent,
       createAutomation, updateAutomationNodes, deleteAutomation, toggleComplexAutomation,
       toggleBasicAutomation, deleteBasicAutomation, addBasicAutomation, updateBasicAutomation,
-      addGlobalTag, deleteGlobalTag,
       refreshData: fetchAll,
       mergeLeads
     }}>

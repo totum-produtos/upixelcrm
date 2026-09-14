@@ -37,7 +37,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CreateTaskModal } from "@/components/crm/CreateTaskModal";
 import { AddTagModal } from "@/components/crm/AddTagModal";
-import { CreateTagModal } from "@/components/crm/CreateTagModal";
 import { ConversationActions } from "@/components/inbox/ConversationActions";
 import { LabelSelector } from "@/components/inbox/LabelSelector";
 import { ReplyBox } from "@/components/inbox/ReplyBox";
@@ -133,7 +132,6 @@ export default function InboxPage() { // force HMR reset
     }
   };
   const [tagModalOpen, setTagModalOpen] = useState(false);
-  const [createTagModalOpen, setCreateTagModalOpen] = useState(false);
   const [mergeModalOpen, setMergeModalOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
@@ -1240,7 +1238,6 @@ export default function InboxPage() { // force HMR reset
         <>
           <CreateTaskModal open={taskModalOpen} onOpenChange={setTaskModalOpen} defaultLeadId={selectedLead.id} />
           <AddTagModal open={tagModalOpen} onOpenChange={setTagModalOpen} leadId={selectedLead.id} />
-          <CreateTagModal open={createTagModalOpen} onOpenChange={setCreateTagModalOpen} />
           
           <MergeLeadsModal 
             open={mergeModalOpen} 
