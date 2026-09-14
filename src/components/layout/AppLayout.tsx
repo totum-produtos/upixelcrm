@@ -6,6 +6,7 @@ import { ThemeToggle } from "./ThemeToggle";
 import { NotificationPopover } from "./NotificationPopover";
 import { SettingsPopover } from "./SettingsPopover";
 import { CommandPalette } from "./CommandPalette";
+import { PreferencesPanel } from "./PreferencesPanel";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -91,6 +92,7 @@ export function AppLayout({ children, title, subtitle, actions, breadcrumbLabel 
           <main className="flex-1 overflow-auto">{children}</main>
         </div>
       </div>
+      <PreferencesPanel />
     </SidebarProvider>
   );
 }

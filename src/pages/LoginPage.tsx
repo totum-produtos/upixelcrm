@@ -1,15 +1,14 @@
-import { useMemo, useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { AlertCircle, CheckCircle2, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "@/lib/theme";
 import { supabase } from "@/integrations/supabase/client";
 import { ACCESS_DENIAL_MESSAGES, type AccessDenialReason } from "@/lib/auth-access";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, Eye, EyeOff, AlertCircle, Lock, Sparkles, CheckCircle2 } from "lucide-react";
+import { SystemImage } from "@/components/system/SystemImage";
 import upixelIconLight from "@/assets/upixel_icon_light.png";
-import upixelIconDark from "@/assets/upixel_icon_dark.png";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -25,7 +24,6 @@ const URL_ERROR_MESSAGES: Record<string, string> = {
 type LoginMode = "password" | "magic";
 
 export default function LoginPage() {
-  const { theme } = useTheme();
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -55,7 +53,14 @@ export default function LoginPage() {
     if (searchParams.get("error")) setSearchParams({}, { replace: true });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const switchMode = (next: LoginMode) => {
+    setMode(next);
+    setError("");
+    setMagicError("");
+    setMagicSent(false);
+  };
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     clearUrlError();
@@ -68,9 +73,9 @@ export default function LoginPage() {
     } else {
       setError(result.error || "E-mail ou senha inválidos");
     }
-  };
+  }
 
-  const handleMagicSubmit = async (e: React.FormEvent) => {
+  async function handleMagicSubmit(e: React.FormEvent) {
     e.preventDefault();
     setMagicError("");
     clearUrlError();
@@ -92,184 +97,189 @@ export default function LoginPage() {
       return;
     }
     setMagicSent(true);
-  };
-
-  const switchMode = (next: LoginMode) => {
-    setMode(next);
-    setError("");
-    setMagicError("");
-    setMagicSent(false);
-  };
+  }
 
   return (
-    <div
-      className="min-h-screen bg-background flex items-center justify-center px-4"
-      style={{ fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif", letterSpacing: "-0.06em" }}
-    >
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <img
-            src={theme === "dark" ? upixelIconDark : upixelIconLight}
-            alt="uPixel"
-            className="h-14 w-14 mx-auto"
-          />
-          <h1 className="text-2xl font-bold text-foreground">uPixel CRM</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Faça login para acessar o sistema
-          </p>
-        </div>
-
-        <div className="bg-card border border-border rounded-card p-6 shadow-xl space-y-4">
-          {urlError && (
-            <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/20 rounded-lg p-3">
-              <AlertCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
-              <p className="text-xs text-destructive">{urlError}</p>
+    <main className="min-h-[100dvh] bg-background text-foreground">
+      <div className="grid min-h-[100dvh] lg:grid-cols-[1.05fr_0.95fr]">
+        <section className="hidden border-r border-border bg-card/50 p-10 lg:flex lg:flex-col lg:justify-between">
+          <div className="flex items-center gap-3">
+            <img src={upixelIconLight} alt="uPixel" className="h-9 w-9" />
+            <div>
+              <p className="text-sm font-semibold">uPixel CRM</p>
+              <p className="text-xs text-muted-foreground">Atendimento, funil e automação</p>
             </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-1 bg-muted rounded-lg p-1">
-            <button
-              type="button"
-              onClick={() => switchMode("password")}
-              className={`h-8 rounded-md text-xs font-medium transition-colors ${
-                mode === "password"
-                  ? "bg-card text-foreground border border-border"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Senha
-            </button>
-            <button
-              type="button"
-              onClick={() => switchMode("magic")}
-              className={`h-8 rounded-md text-xs font-medium transition-colors ${
-                mode === "magic"
-                  ? "bg-card text-foreground border border-border"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Magic Link
-            </button>
           </div>
 
-          {mode === "password" ? (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/20 rounded-lg p-3">
-                  <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
-                  <p className="text-xs text-destructive">{error}</p>
-                </div>
-              )}
-
-              <div className="space-y-1.5">
-                <Label htmlFor="email" className="text-xs">E-mail</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="seu@email.com"
-                    className="pl-10 h-10"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="password" className="text-xs">Senha</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="pl-10 pr-10 h-10"
-                    required
-                    minLength={6}
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2"
-                    onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-                  >
-                    {showPassword
-                      ? <EyeOff className="h-4 w-4 text-muted-foreground" />
-                      : <Eye className="h-4 w-4 text-muted-foreground" />}
-                  </button>
-                </div>
-              </div>
-
-              <Button type="submit" className="w-full h-10 font-medium" disabled={loading}>
-                {loading
-                  ? <div className="animate-spin h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full" />
-                  : "Entrar"}
-              </Button>
-            </form>
-          ) : magicSent ? (
-            <div className="text-center space-y-3 py-4">
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-                <CheckCircle2 className="h-6 w-6 text-primary" />
-              </div>
-              <p className="text-sm font-medium text-foreground">Verifique seu email.</p>
-              <p className="text-xs text-muted-foreground">
-                Enviamos um link de acesso para{" "}
-                <span className="font-medium text-foreground">{magicEmail.trim()}</span>
+          <div className="mx-auto w-full max-w-xl space-y-8">
+            <div className="rounded-card border border-border bg-background p-4">
+              <SystemImage name="sign-in" alt="" className="h-auto w-full rounded-lg" />
+            </div>
+            <div className="space-y-3">
+              <h1 className="text-4xl font-bold tracking-tight">
+                Entre no painel da sua operação comercial.
+              </h1>
+              <p className="max-w-lg text-sm leading-6 text-muted-foreground">
+                Acesse conversas, leads, tarefas e relatórios em um único ambiente conectado ao self-hosted uPixel.
               </p>
             </div>
-          ) : (
-            <form onSubmit={handleMagicSubmit} className="space-y-4" noValidate>
-              <p className="text-xs text-muted-foreground">
-                Receba um link de acesso por e-mail, sem precisar de senha.
-              </p>
+          </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="magic-email" className="text-xs">E-mail</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="magic-email"
-                    type="email"
-                    value={magicEmail}
-                    onChange={(e) => {
-                      setMagicEmail(e.target.value);
-                      setMagicError("");
-                    }}
-                    placeholder="seu@email.com"
-                    className="pl-10 h-10"
-                    aria-invalid={magicError ? true : undefined}
-                  />
+          <p className="text-xs text-muted-foreground">Ambiente seguro com autenticação Supabase.</p>
+        </section>
+
+        <section className="flex items-center justify-center px-5 py-10">
+          <div className="w-full max-w-md space-y-7">
+            <div className="space-y-2 text-center lg:text-left">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-card border border-border bg-card lg:mx-0">
+                <img src={upixelIconLight} alt="uPixel" className="h-8 w-8" />
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight">Acessar uPixel</h2>
+              <p className="text-sm text-muted-foreground">
+                Use sua senha temporária ou solicite um Magic Link.
+              </p>
+            </div>
+
+            <div className="rounded-card border border-border bg-card p-5 shadow-card">
+              {urlError ? (
+                <div className="mb-4 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                  <p className="text-xs text-destructive">{urlError}</p>
                 </div>
-                {magicError && (
-                  <p className="text-xs text-destructive flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3 shrink-0" />
-                    {magicError}
-                  </p>
-                )}
+              ) : null}
+
+              <div className="mb-5 grid grid-cols-2 gap-1 rounded-lg border border-border bg-muted p-1">
+                <button
+                  type="button"
+                  onClick={() => switchMode("password")}
+                  className={`h-9 rounded-md text-xs font-semibold transition-colors ${
+                    mode === "password"
+                      ? "bg-card text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Senha
+                </button>
+                <button
+                  type="button"
+                  onClick={() => switchMode("magic")}
+                  className={`h-9 rounded-md text-xs font-semibold transition-colors ${
+                    mode === "magic"
+                      ? "bg-card text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Magic Link
+                </button>
               </div>
 
-              <Button type="submit" className="w-full h-10 font-medium" disabled={magicLoading}>
-                {magicLoading
-                  ? <div className="animate-spin h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full" />
-                  : (
-                    <span className="flex items-center gap-2">
-                      <Sparkles className="h-4 w-4" />
-                      Enviar Magic Link
-                    </span>
-                  )}
-              </Button>
-            </form>
-          )}
+              {mode === "password" ? (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {error ? (
+                    <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3">
+                      <AlertCircle className="h-4 w-4 shrink-0 text-destructive" />
+                      <p className="text-xs text-destructive">{error}</p>
+                    </div>
+                  ) : null}
 
-          <p className="text-center text-[10px] text-muted-foreground pt-2">
-            Use suas credenciais para acessar o sistema
-          </p>
-        </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">E-mail</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="seu@email.com"
+                        className="h-11 pl-10"
+                        autoComplete="email"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="password">Senha</Label>
+                      <Link to="/forgot-password" className="text-xs text-muted-foreground hover:text-foreground">
+                        Esqueci minha senha
+                      </Link>
+                    </div>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="h-11 pl-10 pr-10"
+                        autoComplete="current-password"
+                        required
+                        minLength={6}
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        onClick={() => setShowPassword(!showPassword)}
+                        aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <Button type="submit" className="h-11 w-full font-semibold" disabled={loading}>
+                    {loading ? "Entrando..." : "Entrar"}
+                  </Button>
+                </form>
+              ) : magicSent ? (
+                <div className="space-y-3 py-6 text-center">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                    <CheckCircle2 className="h-6 w-6 text-primary" />
+                  </div>
+                  <p className="text-sm font-semibold">Link enviado</p>
+                  <p className="text-xs leading-5 text-muted-foreground">
+                    Enviamos um acesso para <span className="font-medium text-foreground">{magicEmail.trim()}</span>.
+                  </p>
+                </div>
+              ) : (
+                <form onSubmit={handleMagicSubmit} className="space-y-4" noValidate>
+                  {magicError ? (
+                    <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3">
+                      <AlertCircle className="h-4 w-4 shrink-0 text-destructive" />
+                      <p className="text-xs text-destructive">{magicError}</p>
+                    </div>
+                  ) : null}
+                  <div className="space-y-2">
+                    <Label htmlFor="magic-email">E-mail</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        id="magic-email"
+                        type="email"
+                        value={magicEmail}
+                        onChange={(e) => {
+                          setMagicEmail(e.target.value);
+                          setMagicError("");
+                        }}
+                        placeholder="seu@email.com"
+                        className="h-11 pl-10"
+                        autoComplete="email"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <Button type="submit" className="h-11 w-full font-semibold" disabled={magicLoading}>
+                    {magicLoading ? "Enviando..." : "Enviar Magic Link"}
+                  </Button>
+                </form>
+              )}
+            </div>
+          </div>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }
