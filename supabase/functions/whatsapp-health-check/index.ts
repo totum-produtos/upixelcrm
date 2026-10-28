@@ -6,6 +6,16 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders } from "../_shared/cors.ts";
 
+function timingSafeEqual(a: string, b: string): boolean {
+  if (typeof a !== "string" || typeof b !== "string") return false;
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
 function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 8000): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -81,9 +91,17 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Gatilho interno de cron: rejeita anon key (pública) e chamadas sem credencial.
+  // CB-03: Require dedicated cron secret. Reject anon key and any non-service credential.
   const cronBearer = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
-  if (!cronBearer || cronBearer === (Deno.env.get("SUPABASE_ANON_KEY") ?? "")) {
+  const cronSecret = (Deno.env.get("CRON_SECRET") ?? "").trim();
+  const serviceKey = (Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "").trim();
+  const anonKey = (Deno.env.get("SUPABASE_ANON_KEY") ?? "").trim();
+
+  const authorized =
+    (cronSecret && timingSafeEqual(cronBearer, cronSecret)) ||
+    (serviceKey && timingSafeEqual(cronBearer, serviceKey));
+
+  if (!authorized || (anonKey && timingSafeEqual(cronBearer, anonKey))) {
     return new Response(JSON.stringify({ error: "Forbidden" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 403,
@@ -93,7 +111,7 @@ Deno.serve(async (req) => {
   try {
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      serviceKey
     );
 
     console.log("Starting WhatsApp health check...");

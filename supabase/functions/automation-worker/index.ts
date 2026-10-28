@@ -4,21 +4,36 @@ import { corsHeaders } from "../_shared/cors.ts";
 
 const MAX_RETRIES = 4;
 
-/** Exponential backoff delay: 2^attempt minutes (2, 4, 8, 16 min) */
 function nextRetryAt(retryCount: number): string {
   const delayMs = Math.pow(2, retryCount) * 60 * 1000;
   return new Date(Date.now() + delayMs).toISOString();
 }
 
-serve(async (req) => {
+function timingSafeEqual(a: string, b: string): boolean {
+  if (typeof a !== "string" || typeof b !== "string") return false;
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
+serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  // Gatilho interno de cron: rejeita chamadas com a anon key (pública no
-  // bundle) ou sem credencial. O cron chama com service key via pg_net.
   const workerBearer = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
-  if (!workerBearer || workerBearer === (Deno.env.get("SUPABASE_ANON_KEY") ?? "")) {
+  const cronSecret = (Deno.env.get("CRON_SECRET") ?? "").trim();
+  const serviceKey = (Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "").trim();
+  const anonKey = (Deno.env.get("SUPABASE_ANON_KEY") ?? "").trim();
+
+  const authorized =
+    (cronSecret && timingSafeEqual(workerBearer, cronSecret)) ||
+    (serviceKey && timingSafeEqual(workerBearer, serviceKey));
+
+  if (!authorized || (anonKey && timingSafeEqual(workerBearer, anonKey))) {
     return new Response(JSON.stringify({ error: "Forbidden" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 403,
@@ -27,20 +42,17 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!supabaseUrl || !serviceKey) {
       console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY env");
       return new Response(JSON.stringify({ error: "missing_env", processed: [] }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200, // soft-fail para não estourar o invoke do client
+        status: 200,
       });
     }
 
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Fetch pending queue items that are due. Tenta com next_retry_at;
-    // se a coluna não existir (migration antiga), faz fallback sem o filtro.
     const now = new Date().toISOString();
     let queueItems: any[] | null = null;
     let error: any = null;
@@ -85,7 +97,6 @@ serve(async (req) => {
     const processed = [];
 
     for (const item of queueItems) {
-      // Mark as processing to prevent duplicate pickup
       await supabase
         .from("automation_queue")
         .update({ status: "processing" })
@@ -96,7 +107,7 @@ serve(async (req) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+            "Authorization": `Bearer ${serviceKey}`,
           },
           body: JSON.stringify({
             tenant_id: item.tenant_id,
@@ -104,7 +115,6 @@ serve(async (req) => {
             lead_id: item.lead_id,
             node_id: item.node_id,
             context: item.context,
-            // Recupera o run_id armazenado no contexto da fila (delay/timeout)
             run_id: (item.context as any)?._run_id ?? null,
           }),
         });
@@ -127,7 +137,6 @@ serve(async (req) => {
         const retryCount = (item.retry_count ?? 0) + 1;
 
         if (retryCount <= MAX_RETRIES) {
-          // Reschedule with exponential backoff
           await supabase
             .from("automation_queue")
             .update({
@@ -145,7 +154,6 @@ serve(async (req) => {
             error: err.message,
           });
         } else {
-          // Exhausted all retries
           await supabase
             .from("automation_queue")
             .update({

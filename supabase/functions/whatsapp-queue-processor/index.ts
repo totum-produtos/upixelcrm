@@ -1,9 +1,15 @@
-// WhatsApp Message Queue Processor
-// Triggered by Supabase Cron — processa itens pendentes da fila e aciona automation-engine.
-// verify_jwt: false — função interna de cron, autentica internamente via SUPABASE_SERVICE_ROLE_KEY.
-
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders } from "../_shared/cors.ts";
+
+function timingSafeEqual(a: string, b: string): boolean {
+  if (typeof a !== "string" || typeof b !== "string") return false;
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
 
 interface QueueItem {
   id: string;
@@ -17,9 +23,6 @@ interface QueueItem {
 
 async function processQueueItem(adminClient: any, item: QueueItem): Promise<boolean> {
   try {
-    // Claim atômico: sem o `status = 'pending'` na condição, duas execuções
-    // concorrentes do cron (ou uma execução lenta sobreposta à seguinte)
-    // pegavam o mesmo item e processavam a mensagem duas vezes.
     const { data: claimed } = await adminClient
       .from("whatsapp_message_queue")
       .update({ status: "processing", updated_at: new Date().toISOString() })
@@ -93,14 +96,21 @@ async function processQueueItem(adminClient: any, item: QueueItem): Promise<bool
   }
 }
 
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Gatilho interno de cron: rejeita anon key (pública) e chamadas sem credencial.
   const cronBearer = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
-  if (!cronBearer || cronBearer === (Deno.env.get("SUPABASE_ANON_KEY") ?? "")) {
+  const cronSecret = (Deno.env.get("CRON_SECRET") ?? "").trim();
+  const serviceKey = (Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "").trim();
+  const anonKey = (Deno.env.get("SUPABASE_ANON_KEY") ?? "").trim();
+
+  const authorized =
+    (cronSecret && timingSafeEqual(cronBearer, cronSecret)) ||
+    (serviceKey && timingSafeEqual(cronBearer, serviceKey));
+
+  if (!authorized || (anonKey && timingSafeEqual(cronBearer, anonKey))) {
     return new Response(JSON.stringify({ error: "Forbidden" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 403,
@@ -110,14 +120,11 @@ Deno.serve(async (req) => {
   try {
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      serviceKey
     );
 
     console.log("Starting WhatsApp queue processor...");
 
-    // Reaper: item que ficou em `processing` (a função morreu no meio) nunca
-    // mais era buscado — o SELECT só olha `pending`. 10 min é folgado o
-    // bastante para não competir com uma execução ainda viva.
     const stuckBefore = new Date(Date.now() - 10 * 60_000).toISOString();
     const { data: reaped } = await adminClient
       .from("whatsapp_message_queue")
@@ -131,8 +138,6 @@ Deno.serve(async (req) => {
       .from("whatsapp_message_queue")
       .select("*")
       .eq("status", "pending")
-      // Itens da rota SDR (route='sdr') são consumidos por um serviço externo
-      // na VPS — o cron do salesbot só processa os seus próprios.
       .eq("route", "salesbot")
       .order("created_at", { ascending: true })
       .limit(100);
@@ -158,12 +163,10 @@ Deno.serve(async (req) => {
     for (let i = 0; i < queueItems.length; i += maxConcurrent) {
       const batch = queueItems.slice(i, i + maxConcurrent);
       const results = await Promise.all(
-        batch.map((item) => processQueueItem(adminClient, item))
+        batch.map((item: QueueItem) => processQueueItem(adminClient, item))
       );
       processedCount += results.length;
-      // `false` = falhou e ainda vai ser retentado. Contava-se `Boolean`, que
-      // é true no sucesso — o log de saúde reportava sucessos como falhas.
-      failedCount += results.filter((ok) => !ok).length;
+      failedCount += results.filter((ok: boolean) => !ok).length;
     }
 
     console.log(`Processed: ${processedCount}, Failed: ${failedCount}`);
