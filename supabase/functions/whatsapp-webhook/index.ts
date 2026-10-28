@@ -4,6 +4,7 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { isDuplicateMessage } from "../_shared/messageDedup.ts";
 import { callerKey, checkRateLimit, limitFromEnv, tooManyRequests } from "../_shared/rateLimit.ts";
 import { verifyMetaSignature } from "../_shared/verifyMetaSignature.ts";
+import { verifyIntegrationWebhookToken, extractWebhookToken, isValidInstanceName, isValidSessionId } from "../_shared/webhookAuth.ts";
 import { downloadAndStoreMetaMedia, resolveGraphMediaUrl } from "../_shared/downloadMetaMedia.ts";
 
 // PC-026: a rota Meta Official aceitava qualquer payload sem validar procedência.
@@ -930,9 +931,23 @@ async function isSdrPilot(adminClient: any, clientId: string, leadId: string): P
 }
 
 // ─── Handle Evolution API (Baileys) webhook ───
-async function handleEvolutionWebhook(body: any, adminClient: any, integrationIdFromUrl: string | null) {
+async function handleEvolutionWebhook(body: any, adminClient: any, integrationIdFromUrl: string | null, req?: Request) {
   const instanceName = body.instance;
   const messageData = body.data;
+  if (!integrationIdFromUrl) {
+    console.warn("[whatsapp-webhook] evolution requires integration_id");
+    return { ok: false, error: "forbidden" };
+  }
+  const webhookToken = req ? extractWebhookToken(req) : null;
+  const authRes = await verifyIntegrationWebhookToken(adminClient, integrationIdFromUrl, webhookToken);
+  if (!authRes.ok) {
+    console.warn(`[whatsapp-webhook] evolution auth failed: ${authRes.reason}`);
+    return { ok: false, error: "forbidden" };
+  }
+  if (instanceName && !isValidInstanceName(instanceName)) {
+    console.warn("[whatsapp-webhook] evolution invalid instance_name");
+    return { ok: false, error: "forbidden" };
+  }
 
   if (!messageData) return { ok: true, skipped: "empty_payload" };
 
@@ -1203,7 +1218,7 @@ async function handleOfficialWebhook(body: any, adminClient: any) {
 }
 
 // ─── Handle OpenWA webhook ───
-async function handleOpenWAWebhook(body: any, adminClient: any, integrationIdFromUrl: string | null) {
+async function handleOpenWAWebhook(body: any, adminClient: any, integrationIdFromUrl: string | null, req?: Request) {
   const event = body.event as string;
   const sessionId = body.sessionId as string;
   const data = body.data;
@@ -1252,13 +1267,20 @@ async function handleOpenWAWebhook(body: any, adminClient: any, integrationIdFro
     match = (row as IntegrationRow | null) ?? null;
   }
 
-  if (!match) {
-    const { data: row } = await adminClient.from("integrations")
+  if (!match && sessionId && isValidSessionId(sessionId)) {
+    const { data: rows } = await adminClient.from("integrations")
       .select("id, client_id, status, config")
       .eq("provider", "whatsapp")
-      .or(`config->>session_id.eq.${sessionId},config->>instance_name.eq.${sessionId}`)
-      .limit(1).maybeSingle();
-    match = (row as IntegrationRow | null) ?? null;
+      .limit(100);
+    if (rows) {
+      for (const r of rows) {
+        const c2 = (r.config || {}) as Record<string, any>;
+        if (c2.session_id === sessionId || c2.instance_name === sessionId) {
+          match = r as IntegrationRow;
+          break;
+        }
+      }
+    }
   }
 
   if (!match) {
@@ -1413,7 +1435,7 @@ Deno.serve(async (req) => {
     // OpenWA format: event is "message.received", "session.status", or "session.disconnected"
     const event = body.event;
     if (event === "message.received" || event === "session.status" || event === "session.disconnected") {
-      const result = await handleOpenWAWebhook(body, adminClient, integrationIdFromUrl);
+      const result = await handleOpenWAWebhook(body, adminClient, integrationIdFromUrl, req);
       return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -1421,7 +1443,7 @@ Deno.serve(async (req) => {
 
     // Evolution API format — handle message events
     if (event === "messages.upsert") {
-      const result = await handleEvolutionWebhook(body, adminClient, integrationIdFromUrl);
+      const result = await handleEvolutionWebhook(body, adminClient, integrationIdFromUrl, req);
       return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -1431,19 +1453,35 @@ Deno.serve(async (req) => {
     if (event === "connection.update") {
       const instanceName = body.instance;
       const state = body.data?.state;
+      const webhookToken = extractWebhookToken(req);
       if (instanceName && state) {
         let newStatus = "disconnected";
         if (state === "open") newStatus = "connected";
         else if (state === "connecting") newStatus = "connecting";
 
-        // Roteamento por integration_id quando disponível (não atualiza cross-tenant).
-        const baseUpdate = adminClient.from("integrations").update({ status: newStatus })
-          .eq("provider", "whatsapp");
-        if (integrationIdFromUrl) {
-          await baseUpdate.eq("id", integrationIdFromUrl);
-        } else {
-          await baseUpdate.filter("config->>instance_name", "eq", instanceName);
+        if (!integrationIdFromUrl) {
+          console.warn("[whatsapp-webhook] connection.update requires integration_id");
+          return new Response("Forbidden", { status: 403, headers: corsHeaders });
         }
+        const authRes = await verifyIntegrationWebhookToken(adminClient, integrationIdFromUrl, webhookToken);
+        if (!authRes.ok) {
+          console.warn(`[whatsapp-webhook] connection.update auth failed: ${authRes.reason}`);
+          return new Response("Forbidden", { status: 403, headers: corsHeaders });
+        }
+        if (!isValidInstanceName(instanceName)) {
+          console.warn("[whatsapp-webhook] connection.update invalid instance_name");
+          return new Response("Forbidden", { status: 403, headers: corsHeaders });
+        }
+        const matchCfg = (authRes.match?.config || {}) as Record<string, any>;
+        const cfgInstance = matchCfg.instance_name as string | undefined;
+        if (cfgInstance && cfgInstance !== instanceName) {
+          console.warn("[whatsapp-webhook] connection.update instance_mismatch");
+          return new Response("Forbidden", { status: 403, headers: corsHeaders });
+        }
+
+        await adminClient.from("integrations").update({ status: newStatus })
+          .eq("provider", "whatsapp")
+          .eq("id", integrationIdFromUrl);
           
         console.log(`Connection update for ${instanceName}: ${state} -> ${newStatus}`);
       }
