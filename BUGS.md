@@ -1,545 +1,179 @@
-# BUGS.md — Auditoria Caixa-Cinza upixelcrm
+# BUGS.md, uPixel CRM
 
-**Data:** 2026-05-11
-**Método:** Análise estática do código (não executado em browser)
-**Escopo:** 12 telas principais conforme map de auditoria
+**Reconciliado em 2026-11-07** (contra o código em disco, branch main @ 9d9f572)
+**Base original:** Auditoria Caixa-Cinza (estática) e Caixa-Preta (runtime), ambas de 2026-05-11
+**Método da reconciliação:** leitura do código atual (grep/read nos arquivos citados). Itens que dependem de dados de produção ou de navegador estão marcados como NÃO VERIFICADO.
+**IDs preservados:** BUG-001..034 (Parte 1) e R-001..R-032 (Parte 2). Numeração de linha refere-se ao código atual.
 
-## Resumo Executivo
+## Resumo
 
-- Total de bugs encontrados: **34**
-- 🔴 Críticos: **11**
-- 🟡 Médios: **14**
-- 🟢 Leves: **9**
-
-| Tela | 🔴 | 🟡 | 🟢 |
+| Status | Parte 1 (BUG-xxx, 34) | Parte 2 (R-xxx, 32) | Total (66) |
 |---|---|---|---|
-| Login | 0 | 1 | 1 |
-| Cadastro (Signup) | 2 | 1 | 0 |
-| Dashboard | 0 | 2 | 1 |
-| Inbox | 0 | 1 | 1 |
-| WhatsApp Config/Instâncias | 0 | 1 | 1 |
-| WhatsApp Disparos | 2 | 2 | 0 |
-| CRM Leads (Contatos) | 1 | 2 | 1 |
-| CRM Pipeline | 0 | 1 | 0 |
-| Automações Visual Builder | 2 | 1 | 1 |
-| Configurações Integrações | 1 | 1 | 1 |
-| Perfil/Tenant/Segurança | 3 | 1 | 1 |
-| Relatórios | 0 | 0 | 1 |
+| RESOLVIDO | 24 | 19 | 43 |
+| OBSOLETO | 1 | 0 | 1 |
+| PARCIAL | 4 | 3 | 7 |
+| ABERTO | 5 | 3 | 8 |
+| NÃO VERIFICADO | 0 | 7 | 7 |
 
-## Ordem Recomendada de Correção
+Itens adicionais de segurança (SEC-x, vindos de ISSUE-*.md, AUDITORIA-API-KEYS.md e PROGRESSO-UPIXEL.md) estão na seção própria abaixo e não entram na contagem acima.
 
-1. **BUG-001** — Senha de gate de cadastro hardcoded no bundle do cliente.
-2. **BUG-002** — SecurityPage inteira é mock (campos não-controlados, botões sem handler).
-3. **BUG-003** — Botão "Excluir Conta" do ProfilePage sem handler.
-4. **BUG-004** — Botão "Atualizar Senha" sem handler e sem state binding.
-5. **BUG-005** — `handleCreate` em AutomationsPage só faz toast "Demonstração" para 3 das 5 abas.
-6. **BUG-006** — Botão "Testar Fluxo" do AutomationBuilder sem onClick.
-7. **BUG-007** — Botões "Acessar Central de Ajuda" e "Configurar Webhook" no BroadcastPage sem handler.
-8. **BUG-008** — Aba "Histórico" do BroadcastPage é placeholder estático.
-9. **BUG-009** — Switch de integrações só dispara toast informativo (não ativa/desativa).
-10. **BUG-010** — BotBuilderPage trava em loading se `id` undefined.
-11. **BUG-011** — Deleção de contatos sem confirmação.
+Legenda de severidade original: 🔴 crítico, 🟡 médio, 🟢 leve.
 
 ---
 
-## Bugs por Severidade
+## EM ABERTO (ordem de severidade)
 
-### 🔴 CRÍTICOS
+### Segurança e isolamento de tenant (fora dos 66 IDs originais)
 
-#### BUG-001 — Senha de gate de cadastro hardcoded no bundle
-- **Tela:** Cadastro
-- **Arquivo:** `src/pages/SignupPage.tsx:11`
-- **Fluxo:** Acesso a `/cadastro` exige senha; o fallback `"Master123!"` está no código do client.
-- **Esperado:** Variável obrigatória `VITE_SIGNUP_PASSWORD` sem fallback, ou validação server-side.
-- **Obtido:** `const SIGNUP_PASSWORD = import.meta.env.VITE_SIGNUP_PASSWORD ?? "Master123!"` — vazado no bundle.
-- **Evidência:** linha 11.
-- **Sugestão de fix:** remover fallback, validar a senha em edge function.
-
-#### BUG-002 — SecurityPage inteira é mock visual sem persistência
-- **Tela:** Configurações → Segurança
-- **Arquivo:** `src/pages/SecurityPage.tsx:11-164`
-- **Fluxo:** Usuário tenta trocar senha, ativar 2FA ou encerrar sessões.
-- **Esperado:** Funcionalidade real ligada ao Supabase Auth.
-- **Obtido:** Inputs de senha sem `value`/`onChange`, switch 2FA com `checked={false}` fixo, botão "Atualizar Senha" sem `onClick`, "Sair de todas as sessões" sem handler, lista de dispositivos hardcoded (`Chrome no Windows 11 · São Paulo`, etc.).
-- **Evidência:** linhas 42, 55, 82–93, 107, 112–130.
-- **Sugestão de fix:** colocar Coming Soon banner OU implementar chamadas a `supabase.auth.updateUser` / `signOut`.
-
-#### BUG-003 — "Excluir Conta" sem handler
-- **Tela:** Configurações → Perfil
-- **Arquivo:** `src/pages/ProfilePage.tsx:142`
-- **Fluxo:** Usuário clica em "Excluir Conta" na Zona de Perigo.
-- **Esperado:** Modal de confirmação + chamada de exclusão server-side.
-- **Obtido:** `<Button ...>Excluir Conta</Button>` sem `onClick`.
-- **Sugestão de fix:** abrir AlertDialog + RPC de soft-delete.
-
-#### BUG-004 — "Atualizar Senha" sem state nem handler
-- **Tela:** Configurações → Segurança
-- **Arquivo:** `src/pages/SecurityPage.tsx:93`
-- **Esperado:** valida senha atual, atualiza nova via `supabase.auth.updateUser`.
-- **Obtido:** botão sem `onClick`; inputs não controlados.
-- **Sugestão de fix:** transformar em form controlado + handler real.
-
-#### BUG-005 — AutomationsPage cria automação fake em 3 abas
-- **Tela:** Automações
-- **Arquivo:** `src/pages/AutomationsPage.tsx:32-54`
-- **Fluxo:** Usuário clica "Nova Sequência" / "Novo Bot" / "Novo Fluxo".
-- **Esperado:** abrir modal/builder correspondente.
-- **Obtido:** `toast.success("... criada com sucesso! (Demonstração)")` — nada criado.
-- **Sugestão de fix:** rotear para `/automations/builder/novo`, `/bots/novo`, ou abrir modal específico.
-
-#### BUG-006 — "Testar Fluxo" sem handler no Automation Builder
-- **Tela:** Automações → Builder
-- **Arquivo:** `src/pages/AutomationBuilderPage.tsx:69-72`
-- **Esperado:** dispara execução do fluxo em modo dry-run.
-- **Obtido:** `<Button ...>Testar Fluxo</Button>` sem `onClick`.
-- **Sugestão de fix:** ocultar o botão até implementar OU adicionar handler que chame edge function de simulação.
-
-#### BUG-007 — Botões "Central de Ajuda" e "Configurar Webhook" mortos
-- **Tela:** WhatsApp Disparos
-- **Arquivo:** `src/pages/WhatsAppBroadcastPage.tsx:86,105`
-- **Esperado:** abrir help center e modal de webhook do Typebot.
-- **Obtido:** dois `<button>` sem `onClick`.
-- **Sugestão de fix:** remover ou adicionar `onClick={() => window.open(...)}` / `setWebhookModalOpen(true)`.
-
-#### BUG-008 — Aba "Histórico" do BroadcastPage é placeholder estático
-- **Tela:** WhatsApp Disparos
-- **Arquivo:** `src/pages/WhatsAppBroadcastPage.tsx:118-130`
-- **Esperado:** lista de envios passados com status de entrega.
-- **Obtido:** card decorativo "Os relatórios... serão exibidos aqui conforme os envios forem processados." — nunca preenchido.
-- **Sugestão de fix:** adicionar query a `broadcast_jobs` ou marcar com `<ComingSoonBadge />`.
-
-#### BUG-009 — Switch de Integrações não faz toggle real
-- **Tela:** Configurações → Integrações
-- **Arquivo:** `src/pages/IntegrationsPage.tsx:92-96`
-- **Fluxo:** Usuário desliga toggle do WhatsApp/Instagram/etc.
-- **Esperado:** desativa integração no banco.
-- **Obtido:** `handleToggle` apenas chama `toast.info("Acesse as configurações...")` — switch volta para o estado anterior visualmente confuso.
-- **Sugestão de fix:** ou desabilitar o switch (`disabled`) ou implementar update na tabela `integrations`.
-
-#### BUG-010 — BotBuilderPage trava em loading se `id` ausente
-- **Tela:** Automações → Bot Builder
-- **Arquivo:** `src/pages/BotBuilderPage.tsx:159-170`
-- **Fluxo:** Acesso direto a `/bots/` sem id, ou id inválido sem registro.
-- **Esperado:** redirect ou tela de erro.
-- **Obtido:** `if (!id) return;` dentro do effect — `loading` nunca vira `false` se id é undefined → spinner infinito.
-- **Sugestão de fix:** `if (!id) { navigate('/automations?tab=bots'); return; }` antes do effect ou setar `loading=false`.
-
-#### BUG-011 — Deleção de contato sem confirmação ✅ RESOLVIDO (AlertDialog já implementado)
-- **Tela:** CRM → Contatos
-- **Arquivo:** `src/pages/ContactsPage.tsx:51-58, 151-153`
-- **Fluxo:** Item "Excluir" do dropdown chama `deleteLead` diretamente.
-- **Esperado:** AlertDialog de confirmação (operação destrutiva).
-- **Obtido:** `onClick={() => handleDelete(contact.id)}` sem confirm.
-- **Sugestão de fix:** envolver com AlertDialog (padrão já usado no CRMPage).
-
----
-
-### 🟡 MÉDIOS
-
-#### BUG-012 — Navigate durante render no LoginPage ✅ RESOLVIDO (2026-06-19)
-- **Tela:** Login
-- **Arquivo:** `src/pages/LoginPage.tsx:22-25`
-- **Obtido:** `if (isAuthenticated) { navigate("/", ...); return null; }` chamado no corpo do componente → warning React "Cannot update during render".
-- **Sugestão de fix:** mover para `useEffect`.
-
-#### BUG-013 — `catch {}` engole erro original no signup ✅ RESOLVIDO (2026-06-19)
-- **Tela:** Cadastro
-- **Arquivo:** `src/pages/SignupPage.tsx:162-169`
-- **Obtido:** `catch { ... setError("Erro inesperado..."); }` sem `(e)` nem log; depuração impossível em produção.
-- **Sugestão de fix:** `catch (e) { logger.error(e); ... }`.
-
-#### BUG-014 — Loading fake com `setTimeout` no CRM/Contacts ✅ RESOLVIDO (2026-06-19)
-- **Tela:** CRM Pipeline / Contatos
-- **Arquivos:** `src/pages/CRMPage.tsx:95-98`, `src/pages/ContactsPage.tsx:31-34`
-- **Obtido:** `setTimeout(() => setIsLoading(false), 600)` — skeleton fake mesmo quando dados já estão carregados pelo `AppContext`.
-- **Sugestão de fix:** usar `loading` do `useAppState`.
-
-#### BUG-015 — Tarefas Pendentes sem empty state no Dashboard
-- **Tela:** Dashboard
-- **Arquivo:** `src/pages/DashboardPage.tsx:218-238`
-- **Obtido:** quando não há tasks pendentes, o `space-y-2` fica vazio (só o header "0 pendentes").
-- **Sugestão de fix:** adicionar `else <p>Nenhuma tarefa pendente</p>`.
-
-#### BUG-016 — `due_date` exibido cru ✅ RESOLVIDO (2026-06-18)
-- **Tela:** Dashboard
-- **Arquivo:** `src/pages/DashboardPage.tsx:233`
-- **Obtido:** `{task.due_date}` impresso como string ISO, sem formatação.
-- **Sugestão de fix:** `format(new Date(task.due_date), 'dd/MM')`.
-
-#### BUG-017 — "Salvar contato" do Inbox só toast
-- **Tela:** Inbox (mensagens tipo contact)
-- **Arquivo:** `src/pages/InboxPage.tsx:606`
-- **Obtido:** botão `+` em vCard → `toast.info("Função de salvar contato em breve")`.
-- **Sugestão de fix:** transformar em ação real (criar lead) ou esconder o botão.
-
-#### BUG-018 — WhatsApp advanced modal sem aria-pressed nos tipos
-- **Tela:** WhatsApp Configurações (modo avançado)
-- **Arquivo:** `src/pages/WhatsAppPage.tsx:628-634`
-- **Obtido:** botões "QR Code" / "API Oficial" sem `aria-pressed` / role explícito.
-- **Sugestão de fix:** adicionar `aria-pressed={advancedType === t}`.
-
-#### BUG-019 — "API Meta Status: Operacional" hardcoded
-- **Tela:** WhatsApp Disparos
-- **Arquivo:** `src/pages/WhatsAppBroadcastPage.tsx:36-41`
-- **Obtido:** status mostrado é sempre verde/Operacional — não reflete realidade.
-- **Sugestão de fix:** ler de `useBroadcast()` ou de health check.
-
-#### BUG-020 — Rate Card "Brasil" hardcoded
-- **Tela:** WhatsApp Disparos
-- **Arquivo:** `src/pages/WhatsAppBroadcastPage.tsx:70`
-- **Obtido:** "Rate Card: Brasil" estático; sem locale do tenant.
-- **Sugestão de fix:** ler do perfil/tenant.
-
-#### BUG-021 — Botão da câmera no avatar sem handler ✅ RESOLVIDO (2026-06-19)
-- **Tela:** Perfil
-- **Arquivo:** `src/pages/ProfilePage.tsx:54-56`
-- **Obtido:** botão de câmera sobre avatar sem `onClick` — usuário tenta trocar foto e nada acontece.
-- **Sugestão de fix:** abrir input file ou esconder botão.
-
-#### BUG-022 — Atalhos "Notificações" e "Idioma e Região" sem onClick ✅ RESOLVIDO (removidos)
-- **Tela:** Perfil
-- **Arquivo:** `src/pages/ProfilePage.tsx:70-75`
-- **Obtido:** dois itens de menu lateral sem handler — UX confusa.
-- **Sugestão de fix:** rotear para anchors da própria página ou esconder.
-
-#### BUG-023 — `setProjectId` dead state ✅ RESOLVIDO (2026-06-19)
-- **Tela:** Integrações
-- **Arquivo:** `src/pages/IntegrationsPage.tsx:51,82`
-- **Obtido:** `projectId` é setado mas nunca lido no JSX.
-- **Sugestão de fix:** remover ou usar.
-
-#### BUG-024 — CRMPage `deleteLead` chamado sem confirmação em alguns pontos ✅ RESOLVIDO (BulkActionsBar e InboxPage têm AlertDialog)
-- **Tela:** CRM Pipeline
-- **Arquivo:** `src/pages/CRMPage.tsx:62`
-- **Obtido:** `deleteLead` destruturado e passado adiante; cards do Kanban podem chamar destrutivo sem AlertDialog em todos os pontos (verificar `KanbanColumn`/`SortableLeadCard`).
-- **Sugestão de fix:** envolver via wrapper que sempre pede confirmação.
-
-#### BUG-025 — "Nova Tarefa" do LeadProfile sem validação de data ✅ RESOLVIDO (2026-06-19)
-- **Tela:** Perfil do Lead
-- **Arquivo:** `src/pages/LeadProfilePage.tsx:651-653`
-- **Obtido:** input `type=date` sem `min` — aceita datas passadas.
-- **Sugestão de fix:** `min={today}` no input.
-
----
-
-### 🟢 LEVES
-
-#### BUG-026 — Show/hide password sem aria-label ✅ RESOLVIDO (2026-06-18)
-- **Tela:** Login
-- **Arquivo:** `src/pages/LoginPage.tsx:94-102`
-- **Sugestão de fix:** `aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}`.
-
-#### BUG-027 — Pluralização errada "integraçãoões" ✅ RESOLVIDO (2026-06-18)
-- **Tela:** Integrações
-- **Arquivo:** `src/pages/IntegrationsPage.tsx:125`
-- **Obtido:** `integração{activeCount !== 1 ? "ões" : ""} ativa{activeCount !== 1 ? "s" : ""}` → quando há mais de 1 fica "integraçãoões".
-- **Sugestão de fix:** trocar por `{activeCount !== 1 ? "integrações ativas" : "integração ativa"}`.
-
-#### BUG-028 — ChevronRight redefinido localmente ✅ RESOLVIDO (2026-06-18)
-- **Tela:** CRM Contatos
-- **Arquivo:** `src/pages/ContactsPage.tsx:210-227`
-- **Obtido:** função `ChevronRight` redefinida apesar de `lucide-react` já fornecer o ícone.
-- **Sugestão de fix:** `import { ChevronRight } from 'lucide-react'`.
-
-#### BUG-029 — `Index.tsx` placeholder do Lovable abandonado ✅ RESOLVIDO (já deletado)
-- **Tela:** —
-- **Arquivo:** `src/pages/Index.tsx`
-- **Obtido:** arquivo inteiro é placeholder ("IMPORTANT: Fully REPLACE this") com `<img src="/placeholder.svg" />`. Não está roteado, mas confunde manutenção.
-- **Sugestão de fix:** deletar.
-
-#### BUG-030 — Dead code em BotBuilderPage ✅ RESOLVIDO (2026-06-19)
-- **Tela:** Bot Builder
-- **Arquivo:** `src/pages/BotBuilderPage.tsx:21-70`
-- **Obtido:** componente `BuilderInner` definido e nunca usado; `void handleSave; void handleToggle` para silenciar lint.
-- **Sugestão de fix:** remover.
-
-#### BUG-031 — Emoji decorativo em produção ✅ RESOLVIDO (2026-06-18)
-- **Tela:** WhatsApp Disparos
-- **Arquivo:** `src/pages/WhatsAppBroadcastPage.tsx:28`
-- **Obtido:** título "Aumente seu ROI com Envios Oficiais 🚀". CLAUDE.md proíbe emojis nesta base.
-- **Sugestão de fix:** remover emoji.
-
-#### BUG-032 — Texto "Em breve" misturado a feature ativa no LeadProfile
-- **Tela:** Lead Profile → Automações
-- **Arquivo:** `src/pages/LeadProfilePage.tsx:632-635`
-- **Obtido:** banner "Automações avançadas em breve" abaixo da lista funcional confunde o usuário.
-- **Sugestão de fix:** colocar em accordion ou seção separada.
-
-#### BUG-033 — Subtítulo dos KPIs no Dashboard inconsistente com 0 leads ✅ RESOLVIDO (2026-06-19)
-- **Tela:** Dashboard
-- **Arquivo:** `src/pages/DashboardPage.tsx:50-51`
-- **Obtido:** `"—"` aparece quando não há leads; inconsistente entre cards (alguns mostram `0 últimos 30d`).
-- **Sugestão de fix:** padronizar para "0%".
-
-#### BUG-034 — `formatRelativeTime` aceita datas futuras silenciosamente ✅ RESOLVIDO (2026-06-19)
-- **Tela:** Dashboard
-- **Arquivo:** `src/pages/DashboardPage.tsx:245-254`
-- **Obtido:** Se `diff` for negativo (data futura), cai em "Agora" sem tratamento.
-- **Sugestão de fix:** `if (minutes < 0) return "Agendado"`.
-
----
-
-## Telas auditadas sem bugs significativos
-
-- **IntelligencePage** — apenas roteador de abas para componentes (`AssistantTab`, `AgentsTab`, `KnowledgeBaseTab`). Lógica nos componentes filhos (não auditados em profundidade).
-- **ReportsPage** — fluxos OK; abas "Avançado" são explicitamente Coming Soon documentado.
-
-## Telas não auditadas em profundidade (delegam para componentes)
-
-- `InboxPage.tsx` (1365 linhas) — auditado parcialmente; lógica de envio vive em hooks/components de `src/components/inbox/`.
-- `UsersPage.tsx` (845 linhas) — auditado parcialmente; permissões/audit log usam Supabase corretamente.
-- `LandingPage.tsx` e `LandingPageEN.tsx` — fora do escopo (LP institucional).
-- Componentes em `src/components/automations/canvas/`, `src/components/bots/`, `src/components/whatsapp/broadcast/` — lógica delegada não revisada.
-
----
-
-*Auditoria gerada por análise estática. Recomenda-se validar BUG-002, BUG-003, BUG-004 com QA manual antes de publicar correções.*
-
----
----
-
-# PARTE 2 — Auditoria RUNTIME (caixa-preta real)
-
-**Data:** 2026-05-11
-**Método:** Navegação real em `https://master.upixel.app/` via Chrome MCP, usuário logado como **Master uPixel** (tenant Totum), 5690 leads reais no banco.
-**Foco:** Validar bugs do audit estático em produção + capturar bugs visuais/runtime que código estático não revela.
-
-## Resumo Executivo Runtime
-
-- **32 bugs novos** identificados em runtime
-- 🔴 Críticos: **11**
-- 🟡 Médios: **15**
-- 🟢 Leves: **6**
-- **Bugs estáticos CONFIRMADOS em runtime:** BUG-002, BUG-003, BUG-005 (com agravante)
-
-| Tela | 🔴 | 🟡 | 🟢 |
+| ID | Status | Situação atual | Evidência |
 |---|---|---|---|
-| Dashboard | 2 | 2 | 0 |
-| Rota /dashboard (404) | 0 | 1 | 1 |
-| Inbox | 0 | 2 | 1 |
-| WhatsApp Config/Instâncias | 0 | 1 | 0 |
-| WhatsApp Disparos | 2 | 3 | 0 |
-| CRM Pipeline | 0 | 1 | 0 |
-| Automações | 1 | 2 | 2 |
-| Users | 0 | 1 | 1 |
-| Reports | 2 | 1 | 0 |
-| Landing / Signup / Login | 4 | 1 | 0 |
+| SEC-1 (A-01) | ABERTO 🔴 | `send-push` valida o chamador com `auth.getUser()`, mas `whatsapp-webhook` e `instagram-webhook` chamam com a service role key. Push de mensagem nova provavelmente nunca é enviado, sem log. | `supabase/functions/send-push/index.ts:75-92`; `ISSUE-send-push-bearer.md` |
+| SEC-2 (A-02) | ABERTO 🔴 | `whatsapp-status-probe` usa service role e consulta `integrations` por `integration_id` sem checar se o chamador pertence ao tenant. Qualquer JWT válido de qualquer tenant que conheça o UUID lê status. | `supabase/functions/whatsapp-status-probe/index.ts:19-48`; `ISSUE-whatsapp-status-probe-auth.md` |
+| SEC-3 (PC-028) | ABERTO 🟡 | CORS cai em `*` quando `ALLOWED_ORIGINS` não está setada. Se a variável está setada em produção: NÃO VERIFICADO (painel Supabase). | `supabase/functions/_shared/cors.ts:2` |
+| SEC-4 (PC-037) | NÃO VERIFICADO | Fallback que varre todas as integrações pelo `webhook_verify_token` ainda existe no código. Depende de confirmar se todo tenant tem `integration_id` na URL cadastrada na Meta. | `supabase/functions/facebook-messenger-webhook/index.ts:30-46` |
+| SEC-5 (PC-038 d/e) | PARCIAL | Migration de RLS tenant-scoped e bucket privado existe no repositório. Se foi aplicada em produção: NÃO VERIFICADO. Backfill de mídia (b) depende de dry-run manual. | `supabase/migrations/20260810150000_pc038_storage_policies.sql` |
+| SEC-6 (PC-039) | NÃO VERIFICADO | Roles divergentes entre fontes e `profiles.role` sem CHECK. Exige `SELECT DISTINCT role FROM profiles` em produção. | `PROGRESSO-UPIXEL.md` (tabela de bloqueados) |
+| SEC-7 (PC-040) | PARCIAL | Reconciliação das migrations órfãs feita em documento, mas o CI só tem `apply-sdr-migration.yml` (migration fixa), sem aplicação geral de migrations. | `.github/workflows/`, `PC-040-RECONCILIACAO.md` |
+| SEC-8 | NÃO VERIFICADO | Série de correções `fix/cb-01..cb-10` está no histórico (cb-01, 02, 03, 04, 05, 06, 08, 09, 10). Não há commit nem referência a `cb-07` no repositório: confirmar se o item foi descartado ou se falta. | `git log` (1c43f8d, 40ae9b2, 1a8f268, 1ee18e6, 5ed1605, 0c84224, dee81b0, 9842ce3, ff0fa6c) |
 
-## Top 5 críticos a tratar IMEDIATAMENTE
+### 🔴 Críticos e parciais da auditoria
 
-1. **R-030** — TODOS os CTAs da landing (Teste grátis, Começar agora, Assinar o Pro) são botões mortos. **Conversão de novos clientes = 0** pela LP.
-2. **R-028 / R-029** — `/signup` e `/login` no domínio raiz retornam landing page. Não existe fluxo de cadastro acessível.
-3. **R-017** — "Nova Automação" persiste automação fantasma no banco com nome "Nova Automação N", sem wizard, sem nome. (Pior que BUG-005 estático: é write real.)
-4. **R-011 / R-012** — Página de Disparos exibe dados fake hardcoded (12.450 enviados, R$ 450/mês, campanhas "Black Friday CONCLUÍDO") enquanto saldo real é 0. Usuário tem percepção falsa de uso.
-5. **R-001** — Dashboard puxa TODOS os 5000+ leads paginados via `select=*` (8MB+ por carregamento), com chamadas duplicadas. Vai derreter tenants grandes.
+#### BUG-024 (PARCIAL): Exclusão de lead sem confirmação no detalhe do lead
+- **Origem:** marcado como resolvido em 2026-06, mas o código novo reabriu a lacuna.
+- **O que está coberto:** `ContactsPage.tsx:194-199` (AlertDialog), `BulkActionsBar.tsx` (AlertDialog), `InboxPage.tsx:1562` (AlertDialog).
+- **O que falta:** `LeadDetailActions.handleDelete` chama `deleteLead` direto no clique de "Excluir", sem AlertDialog, e é usado na rota `/leads/:id` e no Dialog do CRM. Operação destrutiva sem confirmação.
+- **Evidência:** `src/components/crm/LeadDetail.tsx:1060-1064` e `:1084`.
+- **Fix:** envolver o botão em AlertDialog (padrão já usado em ContactsPage).
 
-## Atenção operacional
+#### BUG-002 (PARCIAL): SecurityPage
+- **Hoje:** troca de senha é real (`supabase.auth.updateUser` + `signOut({scope:"others"})`, `src/components/settings/SecuritySettings.tsx:51-54`). 2FA (switches `disabled`, linhas 104 e 117) e "Dispositivos Conectados" (linha 201) estão marcados "Em breve" e sem dados fake.
+- **Falta:** implementar 2FA (MFA do Supabase Auth) e listagem de sessões. Área sensível (auth): aguardar aprovação humana.
 
-> Durante a navegação foi criada uma automação fantasma **"Nova Automação 91"** no tenant Totum como evidência viva do bug R-017. **Por favor apagar manualmente** após validar o bug (ou aceitar como evidência do problema).
+#### BUG-005 (PARCIAL): Criação de automações
+- **Hoje:** abas "rules" e "time_actions" abrem modal que pede nome e criam via `addBasicAutomation` (`src/pages/AutomationsPage.tsx:36-70`). O write fantasma "Nova Automação N" (R-017) foi eliminado.
+- **Falta:** as demais abas mostram `toast.info("... ainda não está disponível por aqui")` (linha 45). Sem fake de sucesso, mas sem criação.
 
----
+#### BUG-006 (PARCIAL): "Testar Fluxo"
+- **Hoje:** o botão tem handler, mas só mostra toast com instrução (`src/pages/AutomationBuilderPage.tsx:69`).
+- **Falta:** dry-run real do fluxo.
 
-## Runtime bugs detalhados
+#### R-001 (PARCIAL): Carga total de leads no client
+- **Resolvido:** a tela Dashboard usa o RPC `useDashboardKpis` (`src/pages/DashboardPage.tsx:27`, migration `20260511_dashboard_kpis_rpc.sql`).
+- **Falta:** `AppContext.fetchAll` ainda baixa todos os leads em páginas de 1000 em background na entrada do app (`src/contexts/AppContext.tsx:150-262`, fase 3), para qualquer rota.
 
-### 🔴 CRÍTICOS
+#### R-023 (PARCIAL): Possível vazamento cross-tenant em /users
+- **Hoje:** rota exige `users.view` (`src/App.tsx:196`); `UsersPage.tsx:122-125,170-173` filtra por `tenant_id` para não-master; migrations de RLS de isolamento existem (`20260902000100_rls_hotfix_tenant_isolation.sql`, `20261028120000_fix_cb01_pending_user_tenant_block.sql`).
+- **Falta:** confirmar em `pg_policies` de produção que `profiles` não é legível entre tenants por não-master. NÃO VERIFICADO (não dá para verificar por código).
 
-#### R-001 — Dashboard carrega TODOS os leads no client
-- **Tela:** Dashboard (`/`)
-- **Evidência runtime:** 8 chamadas `GET /rest/v1/leads?select=*&order=created_at.desc&offset=0..7000&limit=1000`
-- **Esperado:** Dashboard agrega via RPC ou view materializada no Postgres
-- **Obtido:** Cliente baixa 8MB+ de leads em texto puro para calcular KPIs no navegador
-- **Severidade:** 🔴
-- **Fix sugerido:** Criar uma RPC `dashboard_kpis(client_id)` que retorne só os números agregados
+#### R-030 (PARCIAL): CTAs da landing
+- **Resolvido na landing PT:** CTAs chamam `requestDemo()` e levam a `/cadastro` (`src/pages/LandingPage.tsx:12-18,73,95,212`).
+- **Falta:** `LandingPageEN.tsx` aponta CTAs para `https://upixel.app` (linhas 200, 212, 432), ou seja, para a própria landing.
 
-#### R-002 — Chamadas duplicadas no Dashboard
-- **Tela:** Dashboard (`/`)
-- **Evidência:** Offsets 5000/6000/7000 disparados duas vezes na mesma carga
-- **Obtido:** Largura de banda duplicada sem cache
-- **Severidade:** 🔴
-- **Fix sugerido:** TanStack Query `staleTime` + investigar `useEffect` rodando 2x em StrictMode
+### 🟡 Médios
 
-#### R-011 — Dados fake em Disparos (KPIs)
-- **Tela:** WhatsApp Disparos (`/whatsapp/broadcast`)
-- **Esperado:** Cards refletem dados reais do tenant
-- **Obtido:** "TOTAL ENVIADO 12,450", "CUSTO MENSAL R$ 450,00", "USO MÉDIO 415 msg/dia", variações "+12%", "-5%" todos hardcoded. Saldo real do tenant: 0.
-- **Severidade:** 🔴 (usuário pensa que tem histórico que não existe)
+#### R-004 (ABERTO): `tasks` carregadas com `limit(5000)`
+- **Evidência:** `src/services/leads.ts:426` (`listTasks`), chamado em `AppContext.tsx:~172`.
 
-#### R-012 — Histórico de disparos fake
-- **Tela:** WhatsApp Disparos (`/whatsapp/broadcast`) → "HISTÓRICO DE DISPAROS"
-- **Obtido:** Lista hardcoded: "Promocional Black Friday CONCLUÍDO 500 cred Ontem", "Aviso de Vencimento EM ANDAMENTO", "Recuperação de Carrinho CONCLUÍDO"
-- **Severidade:** 🔴
+#### BUG-008 (ABERTO): Aba "Histórico" de Disparos é placeholder
+- **Evidência:** `src/pages/WhatsAppBroadcastPage.tsx:83-95` ("Relatórios Detalhados ... serão exibidos aqui").
+- **Fix:** query em `broadcast_jobs` ou badge Coming Soon.
 
-#### R-017 — "Nova Automação" cria automação fantasma sem wizard
-- **Tela:** Automações (`/automations`)
-- **Fluxo:** Clicar no botão **"Nova Automação"**
-- **Esperado:** Abrir wizard/modal pedindo nome, gatilho, ação
-- **Obtido:** Cria automação direto no banco com nome genérico "Nova Automação N" (N = sequencial), gatilho "Entrada no card" padrão e ação "Adicionar tag" padrão. Sem confirmação. Sem desfazer.
-- **Evidência:** Acabei de criar acidentalmente "Nova Automação 91" no tenant durante o teste. A lista já tem **6 automações** com nomes genéricos ("Nova Automação 32/74/76/81/91" + variantes), todas confirmando que outros usuários caíram no mesmo bug.
-- **Severidade:** 🔴
+#### BUG-017 (ABERTO): "Salvar contato" do Inbox só toast
+- **Evidência:** `src/pages/InboxPage.tsx:926` (`toast.info("Função de salvar contato em breve")`).
 
-#### R-025 — KPIs de Relatórios com variações inventadas
-- **Tela:** Reports (`/reports`)
-- **Esperado:** Variação calculada vs período anterior
-- **Obtido:** "Taxa de Conversão: 0% (+3.2%)", "Leads Totais: 0 (+12%)", "Ticket Médio: R$ 0 (-2.1%)" — variações estáticas em métricas zeradas. Matematicamente impossível.
-- **Severidade:** 🔴
+#### BUG-020 (ABERTO): Rate Card "Brasil" hardcoded
+- **Evidência:** `src/pages/WhatsAppBroadcastPage.tsx:59`.
 
-#### R-026 — Funil de Reports mostra 0 leads (tenant tem 5690)
-- **Tela:** Reports (`/reports`)
-- **Esperado:** Funil reflete leads reais distribuídos nos estágios
-- **Obtido:** Todos os 7 estágios mostram "0 leads / 0%". Dashboard simultaneamente mostra 5000 leads em andamento.
-- **Severidade:** 🔴 (relatório totalmente desconectado da fonte de verdade)
+#### BUG-018 (ABERTO): Botões "QR Code" / "API Oficial" sem `aria-pressed`
+- **Evidência:** o código mudou de arquivo: agora em `src/components/whatsapp/WhatsAppManagement.tsx:735-738` (sem `aria-pressed`).
 
-#### R-028 — `/signup` no domínio raiz retorna landing
-- **Tela:** `https://upixel.app/signup`
-- **Esperado:** Formulário de cadastro
-- **Obtido:** Landing page (mesma de `/`)
-- **Severidade:** 🔴
+#### R-027 (ABERTO, baixo): Aba "Avançado" de Reports marcada Coming Soon
+- **Evidência:** `src/pages/ReportsPage.tsx:531-544` (`ComingSoonCard`). É por design documentado.
 
-#### R-029 — `/login` no domínio raiz retorna landing
-- **Tela:** `https://upixel.app/login`
-- **Obtido:** Landing page
-- **Severidade:** 🔴
+### 🟢 Leves
 
-#### R-030 — TODOS os CTAs da landing são botões mortos
-- **Tela:** `https://upixel.app/`
-- **Fluxo:** Clicar em qualquer um destes botões: "Teste grátis →" (header), "🔥 Teste grátis!" (hero), "Ver demonstração →", "🔥 Começar agora →" (footer), "Assinar o Pro →" (planos)
-- **Esperado:** Abrir modal de cadastro / navegar pra `/signup` / abrir link
-- **Obtido:** Nada. Click registrado, sem navegação, sem modal, sem toast, sem console error.
-- **Severidade:** 🔴🔴 — **bloqueio total de aquisição via LP**
+#### R-009 (ABERTO): Botões do Inbox sem `aria-label`
+- **Evidência:** poucos `aria-label` no módulo (`InboxPage.tsx`: 8; `components/inbox/*`: 1 em ConversationActions, MacrosDropdown, ReplyBox, SnoozePopover; 0 nos demais).
 
-#### R-031 — Placeholder de instruções de design em produção
-- **Tela:** `https://upixel.app/` (landing)
-- **Obtido:** Texto **"Substituir por print do sistema"** aparece **7+ vezes** ao longo da página, no lugar de screenshots reais do produto
-- **Severidade:** 🔴 (credibilidade)
+#### BUG-032 (ABERTO): "Automações avançadas em breve" misturado a feature ativa
+- **Evidência:** `src/components/crm/LeadDetail.tsx:970-973` (código migrou de `LeadProfilePage.tsx`).
+
+### NÃO VERIFICADO (dependem de runtime ou de dados de produção)
+
+| ID | Item | Por que não foi verificado |
+|---|---|---|
+| R-002 | Chamadas duplicadas no Dashboard | Só observável em rede no navegador. O Dashboard agora usa RPC, então o padrão original provavelmente não existe mais. |
+| R-003 | `profiles` puxado 3x na carga | Só observável em rede no navegador. |
+| R-010 | Contador "1 número conectado" vs 2 cards | `WhatsAppPage.tsx` agora tem 15 linhas e delega a componentes; lógica não auditada a fundo. |
+| R-020 | Cards "Boas-vindas" e "Parabéns" com GATILHO/AÇÕES vazios | Depende dos dados das automações do tenant. |
+| R-021 | Várias "Nova Automação N" no banco | Dado de produção. A causa (R-017) foi corrigida; a limpeza dos registros é manual. |
+| R-024 | "Demo uPixel" duplicado em Users | Dado de produção. |
+| R-026 | Funil de Reports com 0 leads | `ReportsPage.tsx:44` lê `leads` do AppContext (dados reais); o resultado em produção não foi testado. |
 
 ---
 
-### 🟡 MÉDIOS
+## HISTÓRICO (RESOLVIDO e OBSOLETO, com evidência)
 
-#### R-003 — `profiles` puxado 3x consecutivas com o mesmo ID
-- **Tela:** Dashboard
-- **Obtido:** `GET /rest/v1/profiles?select=*&id=eq.<uuid>` repetido 3 vezes na carga inicial
-- **Severidade:** 🟡
+### Parte 1: auditoria estática
 
-#### R-004 — `tasks?limit=5000` carregado no Dashboard
-- **Tela:** Dashboard
-- **Obtido:** Mesmo padrão N+1 / fetch-all do R-001 para tasks
-- **Severidade:** 🟡
+| ID | Status | Evidência |
+|---|---|---|
+| BUG-001 | RESOLVIDO | Senha removida do client. Gate validado server-side pela edge function `check-signup-gate` (lê do Vault, comparação em tempo constante): `supabase/functions/check-signup-gate/index.ts`, `src/services/signup.ts:49`. Commit 0c84224 (fix cb-06) e migration `20261030120000_fix_cb06_signup_gate_server_side.sql`. `grep Master123` em `src` e `supabase` vazio. |
+| BUG-003 | RESOLVIDO | Botão e "Zona de Perigo" não existem mais (`grep "Excluir Conta"` em `src` vazio). `ProfilePage.tsx` agora só renderiza `ProfileSettings`. Exclusão real de conta continua não implementada (decisão de produto, área sensível). |
+| BUG-004 | RESOLVIDO | Form controlado com `handleUpdatePassword` e `supabase.auth.updateUser`: `src/components/settings/SecuritySettings.tsx:51,141`. |
+| BUG-007 | RESOLVIDO | Os dois botões mortos foram removidos da página (`WhatsAppBroadcastPage.tsx` tem 100 linhas e nenhum "Central de Ajuda" ou "Configurar Webhook"). |
+| BUG-009 | RESOLVIDO | `handleToggle` atualiza as integrações no banco para os 6 cards mapeados: `src/pages/IntegrationsPage.tsx:140-152`. Só o card sem mapeamento ainda mostra toast informativo. |
+| BUG-010 | RESOLVIDO | `if (!id) { navigate("/automations?tab=bots"); return; }`: `src/pages/BotBuilderPage.tsx:187`. |
+| BUG-011 | RESOLVIDO | AlertDialog "Excluir contato?": `src/pages/ContactsPage.tsx:194-199`. (A mesma classe de problema reapareceu em BUG-024, ver acima.) |
+| BUG-012 | RESOLVIDO | `useEffect` com `navigate`: `src/pages/LoginPage.tsx:48-49`. |
+| BUG-013 | RESOLVIDO | `catch (e)` com `logger.error`: `src/pages/SignupPage.tsx:61-62,178`. |
+| BUG-014 | RESOLVIDO | Nenhum `setTimeout` de loading em `CRMPage.tsx` e `ContactsPage.tsx`; usam `loading` do AppContext (`ContactsPage.tsx:24`). |
+| BUG-015 | RESOLVIDO | Empty state "Sem tarefas pendentes.": `src/pages/DashboardPage.tsx:248`. |
+| BUG-016 | RESOLVIDO | `formatShortDate(task.due_date)`: `DashboardPage.tsx:273`, `src/lib/format-date.ts:26`. |
+| BUG-019 | RESOLVIDO | Badge "API Meta Status: Operacional" removido da página (`WhatsAppBroadcastPage.tsx`, sem ocorrência). |
+| BUG-021 | RESOLVIDO | Botão da câmera `disabled` com rótulo "em breve": `src/components/settings/ProfileSettings.tsx:52-58`. Troca real de foto segue não implementada. |
+| BUG-022 | RESOLVIDO | Atalhos "Notificações" e "Idioma e Região" removidos (`ProfileSettings.tsx` sem ocorrência). |
+| BUG-023 | RESOLVIDO | `projectId` e `setProjectId` não existem mais em `IntegrationsPage.tsx`. |
+| BUG-025 | RESOLVIDO | `min={new Date().toISOString().split("T")[0]}`: `src/components/crm/LeadDetail.tsx:990`. |
+| BUG-026 | RESOLVIDO | `aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}`: `LoginPage.tsx:226`. |
+| BUG-027 | RESOLVIDO | `"integrações ativas" : "integração ativa"`: `IntegrationsPage.tsx:214`. |
+| BUG-028 | RESOLVIDO | `ChevronRight` vem de `lucide-react`: `ContactsPage.tsx:5`; sem redefinição local. |
+| BUG-029 | OBSOLETO | `src/pages/Index.tsx` não existe mais. |
+| BUG-030 | RESOLVIDO | `BuilderInner` e `void handleSave` não existem em `BotBuilderPage.tsx` (228 linhas). |
+| BUG-031 | RESOLVIDO | Título agora "Aumente seu ROI com Envios Oficiais" sem emoji: `WhatsAppBroadcastPage.tsx:28`. |
+| BUG-033 | RESOLVIDO | Sem traço decorativo nos KPIs do Dashboard; valores usam `stats?.x ?? 0`: `DashboardPage.tsx:39-54`. |
+| BUG-034 | RESOLVIDO | `if (rawDiff < 0) return "Agendado"`: `src/lib/format-date.ts:10`. |
 
-#### R-005 — `/dashboard` retorna 404 ✅ RESOLVIDO (2026-06-18)
-- **Tela:** rota `/dashboard`
-- **Esperado:** Mesma tela do Dashboard (`/`)
-- **Obtido:** Página 404 ("Oops! Page not found")
-- **Severidade:** 🟡 (URL bookmarcável esperada quebrada)
+### Parte 2: auditoria runtime
 
-#### R-007 — Botão "Em breve" no toolbar do Inbox ✅ RESOLVIDO (2026-06-19)
-- **Tela:** Inbox → painel de resposta
-- **Obtido:** Botão literalmente rotulado "Em breve", sem feedback ao clique
-- **Severidade:** 🟡
-
-#### R-008 — "USAR IA" sem feedback
-- **Tela:** Inbox → painel de resposta
-- **Fluxo:** Clicar "USAR IA" com textarea vazio
-- **Obtido:** Nenhum toast/aviso/loading. Usuário não sabe se o botão funcionou
-- **Severidade:** 🟡
-
-#### R-010 — Contador "1 número conectado" inconsistente
-- **Tela:** WhatsApp Config (`/whatsapp`)
-- **Obtido:** Header diz "1 número conectado" mas a lista tem 2 cards (um conectado, um desconectado)
-- **Severidade:** 🟡
-
-#### R-013 — Badge "SOON" exposto na ACESSAR CENTRAL DE AJUDA
-- **Tela:** Disparos
-- **Severidade:** 🟡
-
-#### R-014 — "STATUS DE IMPLEMENTAÇÃO (ADMIN)" visível pra usuário comum
-- **Tela:** Disparos
-- **Obtido:** Seção rotulada (ADMIN) renderizada para usuário Master (e provavelmente outros). Conteúdo de dev exposto.
-- **Severidade:** 🟡
-
-#### R-015 — "API META STATUS — Operacional" hardcoded
-- **Tela:** Disparos
-- **Obtido:** Status estático "Operacional" sem chamada de health-check à Meta API
-- **Severidade:** 🟡
-
-#### R-016 — CRM defaults pra pipeline vazio
-- **Tela:** CRM (`/crm`)
-- **Obtido:** Pipeline "Atendimento" carregada por padrão com 0 leads, enquanto outros pipelines do tenant têm 5690 leads. Sem dica visual de que há mais pipelines com dados.
-- **Severidade:** 🟡
-
-#### R-019 — Aba "Bots" rotulada "Em breve" em produção
-- **Tela:** Automações
-- **Severidade:** 🟡
-
-#### R-020 — Automações "Boas-vindas em Novo Lead" e "Parabéns em Fechado Ganho" listam GATILHO/AÇÕES vazios
-- **Tela:** Automações
-- **Obtido:** Cards renderizam labels "GATILHO" e "AÇÕES" sem valores
-- **Severidade:** 🟡 (template não populado ou bug de render)
-
-#### R-023 — Potencial vazamento cross-tenant em `/users`
-- **Tela:** Users (`/users`)
-- **Obtido:** Lista exibe 11 usuários de **4 empresas distintas** (Totum, Derma Clínica, teste, Test Corp). Aceitável SE rota for estritamente master-only protegida via RLS no server.
-- **Risco:** Se um usuário não-master conseguir acessar `/users`, vê e potencialmente bloqueia/deleta usuários de outros tenants.
-- **Severidade:** 🟡 → 🔴 se RLS não estiver no server
-- **Verificar:** RLS policies em `auth.users` / `profiles` quando role != 'master'
-
-#### R-027 — Aba "Avançado — Em breve" em Reports
-- **Tela:** Reports
-- **Severidade:** 🟡
-
-#### R-032 — Copy "Seu período de teste acabou" pra visitante deslogado ✅ RESOLVIDO (copy removido)
-- **Tela:** Landing
-- **Obtido:** Texto na seção PLANOS afirma "Seu período de teste acabou, mas seus leads não esperam!" — exibido para visitante sem cookie, sem trial, sem conta
-- **Severidade:** 🟡
+| ID | Status | Evidência |
+|---|---|---|
+| R-005 | RESOLVIDO | `/dashboard` redireciona para `/`: `src/App.tsx:166`. |
+| R-006 | RESOLVIDO | 404 em PT-BR: `src/pages/errors/NotFoundPage.tsx:8` ("Página não encontrada") e `NotFound.tsx:16`; rota `*` em `App.tsx:223`. |
+| R-007 | RESOLVIDO | Botão "Em breve" do toolbar removido. O botão de emojis ficou `disabled` com aria-label: `src/components/inbox/ReplyBox.tsx:427`. |
+| R-008 | RESOLVIDO | "USAR IA" agora dá feedback (`toast.info("IA analisando histórico...")`): `ReplyBox.tsx:481`. |
+| R-011 | RESOLVIDO | KPIs de Disparos mostram um traço e "Em breve" em vez de números inventados: `src/components/whatsapp/broadcast/BroadcastDashboard.tsx:9-14,46-52`. |
+| R-012 | RESOLVIDO | Histórico vira empty state "Nenhum disparo realizado": `BroadcastDashboard.tsx:62-80`. |
+| R-013 | RESOLVIDO | Badge "SOON" e botão de ajuda não existem mais (sem ocorrência em `src/pages/WhatsAppBroadcastPage.tsx` e `src/components/whatsapp/broadcast`). |
+| R-014 | RESOLVIDO | Seção "STATUS DE IMPLEMENTAÇÃO (ADMIN)" não existe mais (sem ocorrência). |
+| R-015 | RESOLVIDO | Mesma evidência de BUG-019. |
+| R-016 | RESOLVIDO | Na primeira carga, o AppContext troca para o funil com mais leads quando o padrão está vazio: `src/contexts/AppContext.tsx:~214-228`. |
+| R-017 | RESOLVIDO | "Nova Automação" abre modal que exige nome antes de gravar: `src/pages/AutomationsPage.tsx:43-70`. |
+| R-018 | RESOLVIDO | Pluralização correta (ver BUG-027). |
+| R-019 | RESOLVIDO | Aba "Bots" ativa com `BotsTab`, sem rótulo "Em breve": `AutomationsPage.tsx:115,128`. |
+| R-022 | RESOLVIDO | Os itens foram removidos (ver BUG-022). |
+| R-025 | RESOLVIDO | Variações inventadas ("+3.2%", "+12%", "-2.1%") não existem mais em `ReportsPage.tsx`; o texto do KPI é derivado (`:308`). |
+| R-028 | RESOLVIDO | `/signup` redireciona para `/cadastro`: `src/App.tsx:130-134`. |
+| R-029 | RESOLVIDO | `/login` no domínio raiz renderiza `WorkspaceLoginPage`: `src/App.tsx:138`. |
+| R-031 | RESOLVIDO | Texto "Substituir por print do sistema" não existe mais em `src` (grep vazio). |
+| R-032 | RESOLVIDO | Copy "Seu período de teste acabou" removido (grep vazio na landing). |
 
 ---
 
-### 🟢 LEVES
+## Notas
 
-#### R-006 — Página 404 em inglês ✅ RESOLVIDO (2026-06-18)
-- **Tela:** rota inexistente
-- **Obtido:** "Oops! Page not found", "Return to Home" enquanto resto do app é PT-BR
-- **Severidade:** 🟢
+- Aviso operacional herdado: a automação "Nova Automação 91" criada na auditoria runtime no tenant Totum deve ser apagada manualmente (ver R-021).
+- Lint atual: 0 erros e 509 warnings (500 `no-explicit-any`, 8 `exhaustive-deps`). Referência na CLAUDE.md ainda diz 428.
+- Esta reconciliação não executou o app em navegador nem consultou o banco de produção.
 
-#### R-009 — Botões sem aria-label no Inbox
-- **Tela:** Inbox
-- **Obtido:** ~16 botões (cards de conversa, ícones do header e do toolbar) sem `aria-label`
-- **Severidade:** 🟢
-
-#### R-018 — Typo "11 automaçãoões" ✅ RESOLVIDO (pluralização correta no código atual)
-- **Tela:** Automações (cabeçalho da contagem)
-- **Obtido:** Sufixo duplicado: "automaç**ãoões**"
-- **Severidade:** 🟢
-
-#### R-021 — Múltiplas "Nova Automação 32/74/76/81" no banco
-- **Tela:** Automações
-- **Obtido:** Sintoma de outros usuários (Master, Vinicius, etc.) caindo no R-017 e abandonando automações genéricas
-- **Severidade:** 🟢 (efeito; causa em R-017)
-
-#### R-022 — "Atalhos" e "Ativar notificações" sem botão correspondente
-- **Tela:** Perfil
-- **Obtido:** Aparecem como texto visível mas não estão no DOM como elemento clicável
-- **Severidade:** 🟢
-
-#### R-024 — "Demo uPixel" duplicado em Users
-- **Tela:** Users
-- **Obtido:** Dois cadastros: `ola@upixel.app` + `demo@upixel.com.br`, ambos com nome "Demo uPixel"
-- **Severidade:** 🟢
-
----
-
-## Bugs estáticos CONFIRMADOS em runtime
-
-| ID estático | Confirmação em runtime |
-|---|---|
-| **BUG-002** (SecurityPage mock) | ✅ Dispositivos hardcoded "Chrome no Windows 11 - SP / iPhone 15 Pro / Safari MacBook Pro - RJ" mostrados mesmo no Browser 1 macOS. |
-| **BUG-003** (Excluir Conta sem handler) | ✅ Texto "Excluir Conta" aparece no DOM mas não como `button` interativo. |
-| **BUG-005** (Nova Automação fake) | ✅ Pior que o esperado: não é só toast "Demonstração" — escreve no banco. Ver R-017. |
-
-## Bugs estáticos NÃO validados em runtime
-
-BUG-001 (senha hardcoded), BUG-004 (Atualizar Senha sem handler), BUG-006 (Testar Fluxo), BUG-007 (Acessar Central de Ajuda / Configurar Webhook handlers), BUG-008 (Histórico aba placeholder), BUG-009 (switches só toast), BUG-010 (BotBuilder loading), BUG-011 (delete sem confirm) — não testados a fundo no runtime, mas continuam válidos via leitura de código.
-
----
-
-*Auditoria runtime executada em 2026-05-11 via Chrome MCP no tenant `master`. Aviso operacional acima sobre "Nova Automação 91" criada como evidência.*
+*BUGS.md reconciliado em 2026-11-07. Não substitui QA manual.*
