@@ -2,15 +2,15 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
-  Search, Phone, PhoneMissed, MoreVertical, MessageSquare, CheckSquare, Plus, MessageCircle,
-  Loader2, ExternalLink, Lock, Check, CheckCheck, Clock, File, Download, Maximize2, Activity, X,
-  MapPin, UserSquare2, PlayCircle, AlertCircle, PanelRightOpen, ArrowLeft, List, MessageSquareDot,
-  RefreshCw,
+  Search, Phone, PhoneMissed, MessageSquare, Plus, MessageCircle, Loader2, ExternalLink, Lock,
+  Check, CheckCheck, Clock, File, Download, Maximize2, Activity, X, MapPin, UserSquare2,
+  PlayCircle, AlertCircle, List, MessageSquareDot, RefreshCw,
 } from "lucide-react";
 import { MergeLeadsModal } from "@/components/crm/MergeLeadsModal";
 import { Checkbox } from "@/components/ui/checkbox";
 import { InboxBulkActionsBar } from "@/components/inbox/InboxBulkActionsBar";
 import { InboxMediaViewer } from "@/components/inbox/InboxMediaViewer";
+import { InboxChatHeader } from "@/components/inbox/InboxChatHeader";
 import { InboxLeadPanel } from "@/components/inbox/InboxLeadPanel";
 import { InboxDeleteLeadDialog } from "@/components/inbox/InboxDeleteLeadDialog";
 import { InboxNewConversationDialog } from "@/components/inbox/InboxNewConversationDialog";
@@ -18,15 +18,11 @@ import { SelectionProvider, useSelection } from "@/contexts/SelectionContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { CreateTaskModal } from "@/components/crm/CreateTaskModal";
 import { AddTagModal } from "@/components/crm/AddTagModal";
-import { ConversationActions } from "@/components/inbox/ConversationActions";
 import { ReplyBox } from "@/components/inbox/ReplyBox";
-import { SnoozePopover } from "@/components/inbox/SnoozePopover";
-import { MacrosDropdown } from "@/components/inbox/MacrosDropdown";
 import { PriorityBadge } from "@/components/inbox/PriorityBadge";
 import { ConversationStatusBadge } from "@/components/inbox/ConversationStatusBadge";
 import { formatFileSize } from "@/lib/utils";
@@ -478,181 +474,28 @@ function InboxPageInner() { // force HMR reset
           {selectedLeadGroup ? (
             <>
               {/* Chat header */}
-              <div ref={chatHeaderRef} className="px-4 py-2.5 ghost-border border-b flex items-center justify-between shrink-0 bg-card z-10">
-                <div className="flex items-center gap-3 min-w-0">
-                  {isMobile && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label="Voltar para a lista"
-                      className="h-8 w-8 shrink-0 -ml-1"
-                      onClick={() => setMobileView("list")}
-                    >
-                      <ArrowLeft className="h-4 w-4" />
-                    </Button>
-                  )}
-                  <div className="relative group cursor-pointer shrink-0" onClick={togglePanel}>
-                    <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center text-xs font-semibold text-primary shadow-sm group-hover:shadow-md transition-all">
-                      {initials(selectedLeadGroup.lead_name || "?")}
-                    </div>
-                    <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-background flex items-center justify-center overflow-hidden">
-                      {(() => {
-                        const Icon = CHANNEL_ICONS[selectedLeadGroup.channels[0]] || MessageCircle;
-                        return <Icon className={`h-full w-full p-0.5 text-white ${CHANNEL_COLORS[selectedLeadGroup.channels[0]]}`} />;
-                      })()}
-                    </div>
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold text-foreground truncate">{selectedLeadGroup.lead_name}</p>
-                      {selectedLeadGroup.category !== "lead" && (
-                        <Badge className={`text-[9px] px-2 py-0 h-4 border-none uppercase font-black ${selectedLeadGroup.category === "partner" ? "bg-blue-500/20 text-blue-600" : "bg-purple-500/20 text-purple-600"}`}>
-                          {selectedLeadGroup.category === "partner" ? "Parceiro" : "Colaborador"}
-                        </Badge>
-                      )}
-                      <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-success/10 border border-success/20 shrink-0">
-                        <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
-                        <span className="text-[9px] font-bold text-success uppercase">Online</span>
-                      </div>
-                      <ConversationStatusBadge status={selectedLeadGroup.status} />
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <p className="text-[10px] text-muted-foreground">
-                        {selectedLeadGroup.channels.map(ch => CHANNEL_LABELS[ch]).join(" & ")}
-                      </p>
-                      {leadColumn && (
-                        <>
-                          <span className="text-muted-foreground/40 text-[10px]">·</span>
-                          <p className="text-[10px] font-medium text-primary">{leadColumn.name}</p>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  <TooltipProvider delayDuration={200}>
-                    {compactActions ? (
-                      /* Erro 2: colapsa as ações num hamburguer ANTES de sobrepor */
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="ghost" size="icon" aria-label="Ações da conversa" className="h-8 w-8">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent align="end" className="w-56 p-2 space-y-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="w-full justify-start text-xs h-9 gap-2 font-semibold hover:bg-green-500/10 hover:text-green-600"
-                            onClick={() => inbox.updateStatus(inbox.selectedLeadId!, "resolved")}
-                          >
-                            <CheckSquare className="h-3.5 w-3.5" /> Resolver conversa
-                          </Button>
-                          <SnoozePopover
-                            onSnooze={(until) => inbox.snoozeConversation(inbox.selectedLeadId!, until)}
-                          />
-                          <MacrosDropdown
-                            leadId={inbox.selectedLeadId!}
-                            conversationId={activeConversationId || undefined}
-                            currentLabels={selectedLeadGroup.labels}
-                            sendMessage={(text) => inbox.sendMessage(text, activeConversationId || undefined)}
-                            updateStatus={inbox.updateStatus}
-                            updateLabels={inbox.updateLabels}
-                            assignToAgent={inbox.assignToAgent}
-                          />
-                          {!panelOpen && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="w-full justify-start text-xs h-9 gap-2 font-semibold"
-                              onClick={() => setPanelOpen(true)}
-                            >
-                              <PanelRightOpen className="h-3.5 w-3.5" /> Ver detalhes do lead
-                            </Button>
-                          )}
-                          <div className="border-t my-1" />
-                          <div className="flex justify-center">
-                            <ConversationActions
-                              conversation={selectedLeadGroup}
-                              onRefresh={() => inbox.refresh()}
-                              onUpdateStatus={inbox.updateStatus}
-                              onUpdatePriority={inbox.updatePriority}
-                              onAssignToAgent={inbox.assignToAgent}
-                              onUpdateLabels={inbox.updateLabels}
-                              onDeleteLead={() => setDeleteConfirmOpen(true)}
-                              onMergeLeads={() => setMergeModalOpen(true)}
-                            />
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    ) : (
-                      /* Erro 1: textos viram ícones + tooltip */
-                      <>
-                        <div className="flex items-center gap-1 p-1 bg-secondary/30 rounded-xl border border-[hsl(var(--border-strong))]">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                aria-label="Resolver conversa"
-                                className="h-8 w-8 rounded-lg hover:bg-green-500/10 hover:text-green-600 transition-colors"
-                                onClick={() => inbox.updateStatus(inbox.selectedLeadId!, "resolved")}
-                              >
-                                <CheckSquare className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Resolver conversa</TooltipContent>
-                          </Tooltip>
-                          <div className="w-px h-4 bg-border/50" />
-                          <SnoozePopover
-                            iconOnly
-                            onSnooze={(until) => inbox.snoozeConversation(inbox.selectedLeadId!, until)}
-                          />
-                          <div className="w-px h-4 bg-border/50" />
-                          <MacrosDropdown
-                            iconOnly
-                            leadId={inbox.selectedLeadId!}
-                            conversationId={activeConversationId || undefined}
-                            currentLabels={selectedLeadGroup.labels}
-                            sendMessage={(text) => inbox.sendMessage(text, activeConversationId || undefined)}
-                            updateStatus={inbox.updateStatus}
-                            updateLabels={inbox.updateLabels}
-                            assignToAgent={inbox.assignToAgent}
-                          />
-                        </div>
-                        {/* Erro 3/4: botão de recolher vive no painel; aqui só o de abrir, quando fechado */}
-                        {!panelOpen && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                aria-label="Mostrar painel do lead"
-                                className="h-8 w-8 shrink-0"
-                                onClick={() => setPanelOpen(true)}
-                              >
-                                <PanelRightOpen className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Mostrar painel do lead</TooltipContent>
-                          </Tooltip>
-                        )}
-                        <ConversationActions
-                          conversation={selectedLeadGroup}
-                          onRefresh={() => inbox.refresh()}
-                          onUpdateStatus={inbox.updateStatus}
-                          onUpdatePriority={inbox.updatePriority}
-                          onAssignToAgent={inbox.assignToAgent}
-                          onUpdateLabels={inbox.updateLabels}
-                          onDeleteLead={() => setDeleteConfirmOpen(true)}
-                          onMergeLeads={() => setMergeModalOpen(true)}
-                        />
-                      </>
-                    )}
-                  </TooltipProvider>
-                </div>
-              </div>
+              <InboxChatHeader
+                chatHeaderRef={chatHeaderRef}
+                isMobile={isMobile}
+                compactActions={compactActions}
+                onBackToList={() => setMobileView("list")}
+                onTogglePanel={togglePanel}
+                panelOpen={panelOpen}
+                onPanelOpenChange={setPanelOpen}
+                selectedLeadGroup={selectedLeadGroup}
+                selectedLeadId={inbox.selectedLeadId}
+                leadColumn={leadColumn}
+                activeConversationId={activeConversationId}
+                updateStatus={inbox.updateStatus}
+                updatePriority={inbox.updatePriority}
+                snoozeConversation={inbox.snoozeConversation}
+                sendMessage={inbox.sendMessage}
+                updateLabels={inbox.updateLabels}
+                assignToAgent={inbox.assignToAgent}
+                onRefresh={inbox.refresh}
+                onDeleteLead={() => setDeleteConfirmOpen(true)}
+                onMergeLeads={() => setMergeModalOpen(true)}
+              />
 
               {/* Messages timeline */}
               <div className="flex-1 overflow-auto p-4 space-y-4 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent">
