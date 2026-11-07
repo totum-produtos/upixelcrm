@@ -59,3 +59,4 @@ API Meta/
 
 vite.config.ts.timestamp-*.mjs
 coverage/
+.claude/worktrees/
