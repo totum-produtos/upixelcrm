@@ -203,3 +203,27 @@ jobs:
               `Perf ${c("performance")} | A11y ${c("accessibility")} | BP ${c("best-practices")} | SEO ${c("seo")}`, "",
               `LCP ${a("largest-contentful-paint")} | CLS ${a("cumulative-layout-shift")} | TBT ${a("total-blocking-time")}`].join("\n"));
           ' >> "$GITHUB_STEP_SUMMARY"
+
+
+  # Testes de banco (pgTAP) contra um Postgres local do Supabase na própria runner.
+  # Nunca conecta ao projeto Cloud e não usa secrets.
+  # continue-on-error: as migrations ainda não aplicam do zero num banco vazio
+  # (versões duplicadas como 20260401_*, CREATE TABLE public.profiles repetido,
+  # 20261029 com erro de sintaxe, ver docs/migration-history-reconciliation.md).
+  # Remover quando `supabase db start` passar limpo do zero.
+  db-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 3.0.0
+
+      - name: Subir só o Postgres local e aplicar as migrations
+        run: supabase db start
+
+      - name: Rodar testes pgTAP
+        run: supabase test db
