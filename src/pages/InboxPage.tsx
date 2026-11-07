@@ -4,14 +4,14 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import {
   Search, Phone, PhoneMissed, MoreVertical, MessageSquare, CheckSquare, Tag, ArrowRight, Plus,
   User, Building, Mail, MessageCircle, Loader2, ExternalLink, Lock, Tags, Check, CheckCheck, Clock,
-  File, Download, Maximize2, Activity, X, MapPin, UserSquare2, PlayCircle, Instagram, Merge,
-  Trash2, AlertCircle, PanelRightClose, PanelRightOpen, ArrowLeft, List, MessageSquareDot,
-  RefreshCw,
+  File, Download, Maximize2, Activity, X, MapPin, UserSquare2, PlayCircle, Merge, Trash2,
+  AlertCircle, PanelRightClose, PanelRightOpen, ArrowLeft, List, MessageSquareDot, RefreshCw,
 } from "lucide-react";
 import { MergeLeadsModal } from "@/components/crm/MergeLeadsModal";
 import { Checkbox } from "@/components/ui/checkbox";
 import { InboxBulkActionsBar } from "@/components/inbox/InboxBulkActionsBar";
 import { InboxMediaViewer } from "@/components/inbox/InboxMediaViewer";
+import { InboxNewConversationDialog } from "@/components/inbox/InboxNewConversationDialog";
 import { SelectionProvider, useSelection } from "@/contexts/SelectionContext";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
@@ -23,9 +23,7 @@ import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CreateTaskModal } from "@/components/crm/CreateTaskModal";
 import { AddTagModal } from "@/components/crm/AddTagModal";
@@ -45,6 +43,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useInbox } from "@/hooks/useInbox";
 import { useCsatSender } from "@/hooks/useCsatSender";
 import { useMediaViewer } from "@/hooks/useMediaViewer";
+import { useNewConversationForm } from "@/hooks/useNewConversationForm";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useElementSize } from "@/hooks/use-element-size";
 import type { ShadowSdrConversationInput } from "@/types/shadow-sdr";
@@ -120,11 +119,10 @@ function InboxPageInner() { // force HMR reset
   const togglePanel = () => setPanelOpen(!panelOpen);
 
   // New conversation modal
-  const [newConvOpen, setNewConvOpen] = useState(false);
-  const [newChannel, setNewChannel] = useState("whatsapp");
-  const [newLeadId, setNewLeadId] = useState("");
-  const [newPhone, setNewPhone] = useState("");
-  const [newEmail, setNewEmail] = useState("");
+  const {
+    newConvOpen, setNewConvOpen, newChannel, setNewChannel, newLeadId, setNewLeadId,
+    newPhone, setNewPhone, newEmail, setNewEmail, handleCreateConversation,
+  } = useNewConversationForm(inbox.createConversation, leads);
 
   // Modal states
   const [taskModalOpen, setTaskModalOpen] = useState(false);
@@ -218,22 +216,6 @@ function InboxPageInner() { // force HMR reset
     }
     return result;
   }, [inbox.conversations, searchQuery, channelFilter, unreadOnly, inboxTab]);
-
-  const handleCreateConversation = async () => {
-    const lead = leads.find(l => l.id === newLeadId);
-    const phone = newPhone || lead?.phone || "";
-    const email = newEmail || lead?.email || "";
-    const name = lead?.name || phone || email || "Nova conversa";
-
-    const id = await inbox.createConversation(newChannel, newLeadId || undefined, phone, email, name);
-    if (id) {
-      // The hook will auto-select the lead
-      setNewConvOpen(false);
-      setNewLeadId("");
-      setNewPhone("");
-      setNewEmail("");
-    }
-  };
 
   // Find lead data for selected conversation
   const selectedLead = useMemo(() => {
@@ -1388,69 +1370,20 @@ function InboxPageInner() { // force HMR reset
       </div>
 
       {/* New Conversation Modal */}
-      <Dialog open={newConvOpen} onOpenChange={setNewConvOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-sm flex items-center gap-2">
-              <Plus className="h-4 w-4 text-primary" /> Nova Conversa
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">Canal</Label>
-              <Select value={newChannel} onValueChange={setNewChannel}>
-                <SelectTrigger className="text-xs h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="whatsapp" className="text-xs">WhatsApp</SelectItem>
-                  <SelectItem value="whatsapp_official" className="text-xs">WhatsApp Oficial</SelectItem>
-                  <SelectItem value="email" className="text-xs">E-mail</SelectItem>
-                  <SelectItem value="instagram" className="text-xs">Instagram</SelectItem>
-                  <SelectItem value="webchat" className="text-xs">Webchat</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">Lead (opcional)</Label>
-              <Select value={newLeadId} onValueChange={v => {
-                setNewLeadId(v);
-                const lead = leads.find(l => l.id === v);
-                if (lead?.phone) setNewPhone(lead.phone);
-                if (lead?.email) setNewEmail(lead.email || "");
-              }}>
-                <SelectTrigger className="text-xs h-9">
-                  <SelectValue placeholder="Selecione um lead..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {leads.map(l => (
-                    <SelectItem key={l.id} value={l.id} className="text-xs">{l.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {(newChannel === "whatsapp" || newChannel === "whatsapp_official" || newChannel === "webchat") && (
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Telefone</Label>
-                <Input value={newPhone} onChange={e => setNewPhone(e.target.value)} placeholder="+55 11 99999-0000" className="text-xs h-9" />
-              </div>
-            )}
-
-            {newChannel === "email" && (
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">E-mail</Label>
-                <Input value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="email@exemplo.com" className="text-xs h-9" />
-              </div>
-            )}
-
-            <Button className="w-full text-xs" onClick={handleCreateConversation}>
-              <MessageCircle className="h-3 w-3 mr-1" /> Iniciar Conversa
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <InboxNewConversationDialog
+        open={newConvOpen}
+        onOpenChange={setNewConvOpen}
+        leads={leads}
+        channel={newChannel}
+        onChannelChange={setNewChannel}
+        leadId={newLeadId}
+        onLeadIdChange={setNewLeadId}
+        phone={newPhone}
+        onPhoneChange={setNewPhone}
+        email={newEmail}
+        onEmailChange={setNewEmail}
+        onSubmit={handleCreateConversation}
+      />
 
       {/* Modals */}
       {selectedLead && (
