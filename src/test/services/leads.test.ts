@@ -24,6 +24,11 @@ import {
   bulkAddTag,
   bulkUpdateLeadCustomField,
   reassignAndMergePrimary,
+  reassignLeadRelations,
+  reassignTasksToLead,
+  reassignTimelineToLead,
+  deleteColumnsByPipeline,
+  bulkUpdateLeadStandardField,
   bulkDeleteLeadsLogOnly,
   listDismissedDuplicateGroupKeys,
   insertDuplicateException,
@@ -200,38 +205,48 @@ describe("services/leads - importação e consultas por tenant", () => {
 
 describe("services/leads - operações em massa", () => {
   it("bulkMoveLeads divide em chunks de 500 e envia column_id", async () => {
-    await bulkMoveLeads(ids(1001), "col-9");
+    await bulkMoveLeads(ids(1001), "col-9", "c-1");
     const queries = mockSupabase.queriesFor("leads");
     expect(queries).toHaveLength(3);
     const sizes = queries.map((q) => (q.find((c) => c[0] === "in")?.[2] as string[]).length);
     expect(sizes).toEqual([500, 500, 1]);
-    for (const q of queries) expect(q).toContainEqual(["update", { column_id: "col-9" }]);
+    for (const q of queries) {
+      expect(q).toContainEqual(["update", { column_id: "col-9" }]);
+      expect(q).toContainEqual(["eq", "client_id", "c-1"]);
+    }
+  });
+
+  it("bulkMoveLeads em master view não filtra por client_id", async () => {
+    await bulkMoveLeads(ids(2), "col-9", "c-1", true);
+    expect(mockSupabase.callsFor("leads").some((c) => c[0] === "eq")).toBe(false);
   });
 
   it("bulkMoveLeads não consulta nada com lista vazia e aborta no primeiro erro", async () => {
-    await bulkMoveLeads([], "col-9");
+    await bulkMoveLeads([], "col-9", "c-1");
     expect(mockSupabase.queriesFor("leads")).toHaveLength(0);
 
     mockSupabase.respond("leads", { error: new Error("fail") });
-    await expect(bulkMoveLeads(ids(1200), "col-9")).rejects.toThrow("fail");
+    await expect(bulkMoveLeads(ids(1200), "col-9", "c-1")).rejects.toThrow("fail");
     expect(mockSupabase.queriesFor("leads")).toHaveLength(1);
   });
 
   it("bulkDeleteLeads apaga em chunks e lança em erro", async () => {
-    await bulkDeleteLeads(ids(501));
+    await bulkDeleteLeads(ids(501), "c-1");
     expect(mockSupabase.queriesFor("leads")).toHaveLength(2);
+    for (const q of mockSupabase.queriesFor("leads")) expect(q).toContainEqual(["eq", "client_id", "c-1"]);
     expect(mockSupabase.callsFor("leads").filter((c) => c[0] === "delete")).toHaveLength(2);
 
     mockSupabase.reset();
     mockSupabase.respond("leads", { error: new Error("rls") });
-    await expect(bulkDeleteLeads(ids(3))).rejects.toThrow("rls");
+    await expect(bulkDeleteLeads(ids(3), "c-1")).rejects.toThrow("rls");
   });
 
   it("bulkDeleteLeadsLogOnly continua nos demais chunks após erro e não lança", async () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     mockSupabase.respond("leads", { error: new Error("c1") }, { error: null });
-    await expect(bulkDeleteLeadsLogOnly(ids(1000))).resolves.toBeUndefined();
+    await expect(bulkDeleteLeadsLogOnly(ids(1000), "c-1")).resolves.toBeUndefined();
     expect(mockSupabase.queriesFor("leads")).toHaveLength(2);
+    for (const q of mockSupabase.queriesFor("leads")) expect(q).toContainEqual(["eq", "client_id", "c-1"]);
     expect(spy).toHaveBeenCalledTimes(1);
     spy.mockRestore();
   });
@@ -248,12 +263,14 @@ describe("services/leads - operações em massa", () => {
       },
       { error: null }
     );
-    const failures = await bulkAddTag(["l1", "l2", "l3"], "vip");
+    const failures = await bulkAddTag(["l1", "l2", "l3"], "vip", "c-1");
     expect(failures).toBe(0);
     const updates = mockSupabase.callsFor("leads").filter((c) => c[0] === "update");
     expect(updates).toHaveLength(2);
     expect(updates).toContainEqual(["update", { tags: ["x", "vip"] }]);
     expect(updates).toContainEqual(["update", { tags: ["vip"] }]);
+    // select e updates ficam presos ao tenant
+    for (const q of mockSupabase.queriesFor("leads")) expect(q).toContainEqual(["eq", "client_id", "c-1"]);
   });
 
   it("bulkAddTag conta falhas dos updates individuais", async () => {
@@ -263,12 +280,12 @@ describe("services/leads - operações em massa", () => {
       { error: new Error("u1") },
       { error: null }
     );
-    expect(await bulkAddTag(["l1", "l2"], "t")).toBe(1);
+    expect(await bulkAddTag(["l1", "l2"], "t", "c-1")).toBe(1);
   });
 
   it("bulkAddTag reporta tudo como falha se o select inicial falhar e não faz updates", async () => {
     mockSupabase.respond("leads", { error: { message: "sel" } });
-    expect(await bulkAddTag(["a", "b", "c"], "t")).toBe(3);
+    expect(await bulkAddTag(["a", "b", "c"], "t", "c-1")).toBe(3);
     expect(mockSupabase.callsFor("leads").some((c) => c[0] === "update")).toBe(false);
   });
 
@@ -299,11 +316,12 @@ describe("services/leads - operações em massa", () => {
 
 describe("services/leads - merge de duplicatas", () => {
   it("reassignAndMergePrimary reaponta 3 tabelas e atualiza tags/notes do primário", async () => {
-    const res = await reassignAndMergePrimary(["s1", "s2"], "p1", ["a", "b"], "", undefined);
+    const res = await reassignAndMergePrimary(["s1", "s2"], "p1", ["a", "b"], "", "c-1", undefined);
     expect(res).toHaveLength(4);
     for (const t of ["conversations", "tasks", "timeline_events"]) {
       expect(mockSupabase.callsFor(t)).toContainEqual(["update", { lead_id: "p1" }]);
       expect(mockSupabase.callsFor(t)).toContainEqual(["in", "lead_id", ["s1", "s2"]]);
+      expect(mockSupabase.callsFor(t)).toContainEqual(["eq", "client_id", "c-1"]);
     }
     const leadCalls = mockSupabase.callsFor("leads");
     expect(leadCalls).toContainEqual(["update", { tags: ["a", "b"], notes: null }]);
@@ -311,13 +329,13 @@ describe("services/leads - merge de duplicatas", () => {
   });
 
   it("reassignAndMergePrimary inclui notes_local só quando informado", async () => {
-    await reassignAndMergePrimary(["s1"], "p1", [], "nota", "local");
+    await reassignAndMergePrimary(["s1"], "p1", [], "nota", "c-1", "local");
     expect(mockSupabase.callsFor("leads")).toContainEqual([
       "update",
       { tags: [], notes: "nota", notes_local: "local" },
     ]);
     mockSupabase.reset();
-    await reassignAndMergePrimary(["s1"], "p1", [], "nota", null);
+    await reassignAndMergePrimary(["s1"], "p1", [], "nota", "c-1", null);
     expect(mockSupabase.callsFor("leads")).toContainEqual([
       "update",
       { tags: [], notes: "nota", notes_local: null },
@@ -488,5 +506,45 @@ describe("services/leads - timeline do lead, tasks e inserts", () => {
     expect(mockSupabase.callsFor("leads")).toContainEqual(["insert", row]);
     mockSupabase.respond("leads", { error: new Error("x") });
     await expect(insertLead(row)).rejects.toThrow("x");
+  });
+});
+
+describe("services/leads - filtro explícito de client_id em operações em massa", () => {
+  it("bulkUpdateLeadStandardField filtra por client_id em cada chunk e pula em master view", async () => {
+    await bulkUpdateLeadStandardField(ids(501), "source", "x", "c-1");
+    const queries = mockSupabase.queriesFor("leads");
+    expect(queries).toHaveLength(2);
+    for (const q of queries) expect(q).toContainEqual(["eq", "client_id", "c-1"]);
+    mockSupabase.reset();
+    await bulkUpdateLeadStandardField(ids(2), "source", "x", "c-1", true);
+    expect(mockSupabase.callsFor("leads").some((c) => c[0] === "eq")).toBe(false);
+  });
+
+  it("reassignLeadRelations filtra as 3 tabelas por client_id (e não em master view)", async () => {
+    await reassignLeadRelations(["s1"], "p1", "c-1");
+    for (const t of ["conversations", "tasks", "timeline_events"]) {
+      expect(mockSupabase.callsFor(t)).toContainEqual(["eq", "client_id", "c-1"]);
+    }
+    mockSupabase.reset();
+    await reassignLeadRelations(["s1"], "p1", "c-1", true);
+    expect(mockSupabase.callsFor("tasks").some((c) => c[0] === "eq")).toBe(false);
+  });
+
+  it("reassignTasksToLead e reassignTimelineToLead filtram por client_id", async () => {
+    await reassignTasksToLead("a", "b", "c-1");
+    await reassignTimelineToLead("a", "b", "c-1");
+    expect(mockSupabase.callsFor("tasks")).toContainEqual(["eq", "client_id", "c-1"]);
+    expect(mockSupabase.callsFor("timeline_events")).toContainEqual(["eq", "client_id", "c-1"]);
+    mockSupabase.reset();
+    await reassignTasksToLead("a", "b", "c-1", true);
+    expect(mockSupabase.callsFor("tasks")).not.toContainEqual(["eq", "client_id", "c-1"]);
+  });
+
+  it("deleteColumnsByPipeline filtra por client_id (e não em master view)", async () => {
+    await deleteColumnsByPipeline("p1", "c-1");
+    expect(mockSupabase.callsFor("pipeline_columns")).toContainEqual(["eq", "client_id", "c-1"]);
+    mockSupabase.reset();
+    await deleteColumnsByPipeline("p1", "c-1", true);
+    expect(mockSupabase.callsFor("pipeline_columns")).not.toContainEqual(["eq", "client_id", "c-1"]);
   });
 });

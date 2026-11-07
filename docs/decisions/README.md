@@ -12,6 +12,7 @@ Registro das decisões técnicas do projeto. Numeração local `ADR-UPX-NNN` (ve
 | ADR-UPX-004 | Camadas: services, hooks, pages | Aceita | [ADR-UPX-004-camadas-services-hooks-pages.md](ADR-UPX-004-camadas-services-hooks-pages.md) |
 | ADR-UPX-005 | Quality Gate obrigatório em PR | Proposta | [ADR-UPX-005-quality-gate-em-pr.md](ADR-UPX-005-quality-gate-em-pr.md) |
 | ADR-UPX-006 | Preview Vercel como ambiente canário | Proposta | [ADR-UPX-006-preview-vercel-canario.md](ADR-UPX-006-preview-vercel-canario.md) |
+| ADR-UPX-007 | Isolamento de tenant: RLS mais filtro em operações em massa | Proposta | [ADR-UPX-007-isolamento-tenant-rls-mais-filtro-em-massa.md](ADR-UPX-007-isolamento-tenant-rls-mais-filtro-em-massa.md) |
 
 ## Template
 

@@ -152,35 +152,49 @@ export async function listAllLeads(clientId: string, limit = 5000): Promise<Lead
   return (data ?? []) as Lead[];
 }
 
-export async function bulkMoveLeads(ids: string[], columnId: string): Promise<void> {
+// Operações em massa/destrutivas: além da RLS (fronteira oficial, ADR-UPX-007),
+// filtram explicitamente por client_id. masterView (master no subdomínio "master"
+// opera entre tenants) pula o filtro, como nas leituras abaixo.
+
+export async function bulkMoveLeads(
+  ids: string[],
+  columnId: string,
+  clientId: string,
+  masterView = false,
+): Promise<void> {
   // Move em chunks de 500 (limite seguro do PostgREST .in()), como bulkDeleteLeads.
   // columnId determina o funil de destino também (o funil do lead é derivado da
   // coluna: lead.column_id -> pipeline_columns.pipeline_id).
   const CHUNK = 500;
   for (let i = 0; i < ids.length; i += CHUNK) {
-    const { error } = await supabase
-      .from("leads")
-      .update({ column_id: columnId })
-      .in("id", ids.slice(i, i + CHUNK));
+    let q = supabase.from("leads").update({ column_id: columnId }).in("id", ids.slice(i, i + CHUNK));
+    if (!masterView) q = q.eq("client_id", clientId);
+    const { error } = await q;
     if (error) throw error;
   }
 }
 
-export async function bulkDeleteLeads(ids: string[]): Promise<void> {
+export async function bulkDeleteLeads(ids: string[], clientId: string, masterView = false): Promise<void> {
   // ponytail: delete em chunks de 500 (limite seguro do PostgREST .in())
   const CHUNK = 500;
   for (let i = 0; i < ids.length; i += CHUNK) {
-    const { error } = await supabase.from("leads").delete().in("id", ids.slice(i, i + CHUNK));
+    let q = supabase.from("leads").delete().in("id", ids.slice(i, i + CHUNK));
+    if (!masterView) q = q.eq("client_id", clientId);
+    const { error } = await q;
     if (error) throw error;
   }
 }
 
 /** Adiciona uma tag a vários leads, ignorando os que já a têm. Retorna nº de falhas. */
-export async function bulkAddTag(ids: string[], tag: string): Promise<number> {
-  const { data: leadsData, error: selectError } = await supabase
-    .from("leads")
-    .select("id, tags")
-    .in("id", ids);
+export async function bulkAddTag(
+  ids: string[],
+  tag: string,
+  clientId: string,
+  masterView = false,
+): Promise<number> {
+  let selectQuery = supabase.from("leads").select("id, tags").in("id", ids);
+  if (!masterView) selectQuery = selectQuery.eq("client_id", clientId);
+  const { data: leadsData, error: selectError } = await selectQuery;
   if (selectError) {
     // Sem o select nada foi atualizado: reporta tudo como falha em vez de "0 falhas".
     logger.error("[bulkAddTag]", selectError.message);
@@ -190,7 +204,9 @@ export async function bulkAddTag(ids: string[], tag: string): Promise<number> {
   const updates = (leadsData ?? []).map(async (l) => {
     const current = Array.isArray(l.tags) ? (l.tags as string[]) : [];
     if (current.includes(tag)) return null;
-    return supabase.from("leads").update({ tags: [...current, tag] }).eq("id", l.id);
+    let q = supabase.from("leads").update({ tags: [...current, tag] }).eq("id", l.id);
+    if (!masterView) q = q.eq("client_id", clientId);
+    return q;
   });
   const results = await Promise.allSettled(updates);
   return results.filter(
@@ -208,13 +224,14 @@ export async function bulkUpdateLeadStandardField(
   ids: string[],
   field: string,
   value: unknown,
+  clientId: string,
+  masterView = false,
 ): Promise<void> {
   const CHUNK = 500;
   for (let i = 0; i < ids.length; i += CHUNK) {
-    const { error } = await supabase
-      .from("leads")
-      .update({ [field]: value })
-      .in("id", ids.slice(i, i + CHUNK));
+    let q = supabase.from("leads").update({ [field]: value }).in("id", ids.slice(i, i + CHUNK));
+    if (!masterView) q = q.eq("client_id", clientId);
+    const { error } = await q;
     if (error) throw error;
   }
 }
@@ -241,12 +258,26 @@ export async function bulkUpdateLeadCustomField(
  * comportamento do merge() de dedup hoje — nenhuma das 3 updates é crítica
  * o bastante pra abortar o merge do lead).
  */
-export async function reassignLeadRelations(sourceIds: string[], primaryId: string): Promise<void> {
-  await Promise.all([
-    supabase.from("conversations").update({ lead_id: primaryId }).in("lead_id", sourceIds),
-    supabase.from("tasks").update({ lead_id: primaryId }).in("lead_id", sourceIds),
-    supabase.from("timeline_events").update({ lead_id: primaryId }).in("lead_id", sourceIds),
-  ]);
+export async function reassignLeadRelations(
+  sourceIds: string[],
+  primaryId: string,
+  clientId: string,
+  masterView = false,
+): Promise<void> {
+  await Promise.all(reassignRelationQueries(sourceIds, primaryId, clientId, masterView));
+}
+
+/** Os 3 updates de lead_id (conversations/tasks/timeline_events), presos ao tenant. */
+function reassignRelationQueries(sourceIds: string[], primaryId: string, clientId: string, masterView: boolean) {
+  let conv = supabase.from("conversations").update({ lead_id: primaryId }).in("lead_id", sourceIds);
+  let tasks = supabase.from("tasks").update({ lead_id: primaryId }).in("lead_id", sourceIds);
+  let timeline = supabase.from("timeline_events").update({ lead_id: primaryId }).in("lead_id", sourceIds);
+  if (!masterView) {
+    conv = conv.eq("client_id", clientId);
+    tasks = tasks.eq("client_id", clientId);
+    timeline = timeline.eq("client_id", clientId);
+  }
+  return [conv, tasks, timeline];
 }
 
 /**
@@ -260,12 +291,12 @@ export async function reassignAndMergePrimary(
   primaryId: string,
   mergedTags: string[],
   mergedNotes: string,
+  clientId: string,
   mergedNotesLocal?: string | null,
+  masterView = false,
 ): Promise<PromiseSettledResult<unknown>[]> {
   return Promise.allSettled([
-    supabase.from("conversations").update({ lead_id: primaryId }).in("lead_id", sourceIds),
-    supabase.from("tasks").update({ lead_id: primaryId }).in("lead_id", sourceIds),
-    supabase.from("timeline_events").update({ lead_id: primaryId }).in("lead_id", sourceIds),
+    ...reassignRelationQueries(sourceIds, primaryId, clientId, masterView),
     supabase.from("leads").update({
       tags: mergedTags,
       notes: mergedNotes || null,
@@ -275,10 +306,12 @@ export async function reassignAndMergePrimary(
 }
 
 /** Delete em chunks que loga e segue em erro, sem abortar os chunks restantes. */
-export async function bulkDeleteLeadsLogOnly(ids: string[]): Promise<void> {
+export async function bulkDeleteLeadsLogOnly(ids: string[], clientId: string, masterView = false): Promise<void> {
   const CHUNK = 500;
   for (let i = 0; i < ids.length; i += CHUNK) {
-    const { error } = await supabase.from("leads").delete().in("id", ids.slice(i, i + CHUNK));
+    let q = supabase.from("leads").delete().in("id", ids.slice(i, i + CHUNK));
+    if (!masterView) q = q.eq("client_id", clientId);
+    const { error } = await q;
     if (error) {
       console.error("Bulk delete failed:", error);
     }
@@ -370,23 +403,35 @@ export async function deleteLeadById(id: string): Promise<void> {
 }
 
 /** Move tasks de um lead para outro (passo do merge do inbox). */
-export async function reassignTasksToLead(fromLeadId: string, toLeadId: string): Promise<void> {
-  const { error } = await supabase.from("tasks").update({ lead_id: toLeadId }).eq("lead_id", fromLeadId);
+export async function reassignTasksToLead(
+  fromLeadId: string,
+  toLeadId: string,
+  clientId: string,
+  masterView = false,
+): Promise<void> {
+  let q = supabase.from("tasks").update({ lead_id: toLeadId }).eq("lead_id", fromLeadId);
+  if (!masterView) q = q.eq("client_id", clientId);
+  const { error } = await q;
   if (error) throw error;
 }
 
-/** Move notes de um lead para outro (passo do merge do inbox; tabela fora dos tipos gerados). */
+/** Move notes de um lead para outro (passo do merge do inbox; tabela fora dos tipos gerados).
+ * Sem filtro de client_id: schema de notes não versionado, só RLS (ADR-UPX-007). */
 export async function reassignNotesToLead(fromLeadId: string, toLeadId: string): Promise<void> {
   const { error } = await untypedFrom("notes").update({ lead_id: toLeadId }).eq("lead_id", fromLeadId);
   if (error) throw error;
 }
 
 /** Move timeline_events de um lead para outro (merge do CRM/AppContext). */
-export async function reassignTimelineToLead(fromLeadId: string, toLeadId: string): Promise<void> {
-  const { error } = await supabase
-    .from("timeline_events")
-    .update({ lead_id: toLeadId })
-    .eq("lead_id", fromLeadId);
+export async function reassignTimelineToLead(
+  fromLeadId: string,
+  toLeadId: string,
+  clientId: string,
+  masterView = false,
+): Promise<void> {
+  let q = supabase.from("timeline_events").update({ lead_id: toLeadId }).eq("lead_id", fromLeadId);
+  if (!masterView) q = q.eq("client_id", clientId);
+  const { error } = await q;
   if (error) throw error;
 }
 
@@ -592,8 +637,10 @@ export async function deletePipelineById(id: string): Promise<void> {
   if (error) throw error;
 }
 
-export async function deleteColumnsByPipeline(pipelineId: string): Promise<void> {
-  const { error } = await supabase.from("pipeline_columns").delete().eq("pipeline_id", pipelineId);
+export async function deleteColumnsByPipeline(pipelineId: string, clientId: string, masterView = false): Promise<void> {
+  let q = supabase.from("pipeline_columns").delete().eq("pipeline_id", pipelineId);
+  if (!masterView) q = q.eq("client_id", clientId);
+  const { error } = await q;
   if (error) throw error;
 }
 

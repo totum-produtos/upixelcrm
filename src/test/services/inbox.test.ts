@@ -29,6 +29,7 @@ import {
   countOpenUnreadConversations,
   countPendingTasks,
   markConversationsRead,
+  reassignConversationsToLead,
   markConversationsUnread,
   insertMessage,
 } from "@/services/inbox";
@@ -125,21 +126,25 @@ describe("services/inbox - conversas", () => {
   });
 
   it("updateConversationsStatus inclui snoozed_until só quando informado", async () => {
-    await updateConversationsStatus(["c1", "c2"], "closed");
+    await updateConversationsStatus(["c1", "c2"], "closed", "t-1");
     const first = mockSupabase.callsFor("conversations").find((c) => c[0] === "update");
     expect(first?.[1]).toMatchObject({ status: "closed" });
     expect(first?.[1]).not.toHaveProperty("snoozed_until");
 
     mockSupabase.reset();
-    await updateConversationsStatus(["c1"], "snoozed", "2030-01-01T00:00:00Z");
+    await updateConversationsStatus(["c1"], "snoozed", "t-1", "2030-01-01T00:00:00Z");
     const second = mockSupabase.callsFor("conversations").find((c) => c[0] === "update");
     expect(second?.[1]).toMatchObject({ status: "snoozed", snoozed_until: "2030-01-01T00:00:00Z" });
     expect(mockSupabase.callsFor("conversations")).toContainEqual(["in", "id", ["c1"]]);
+    expect(mockSupabase.callsFor("conversations")).toContainEqual(["eq", "client_id", "t-1"]);
+    mockSupabase.reset();
+    await updateConversationsStatus(["c1"], "open", "t-1", undefined, true);
+    expect(mockSupabase.callsFor("conversations").some((c) => c[0] === "eq")).toBe(false);
   });
 
   it("updateConversationsStatus propaga erro", async () => {
     mockSupabase.respond("conversations", { error: new Error("fail") });
-    await expect(updateConversationsStatus(["c1"], "open")).rejects.toThrow("fail");
+    await expect(updateConversationsStatus(["c1"], "open", "t-1")).rejects.toThrow("fail");
   });
 
   it("updateConversationMetadata so atualiza updated_at com touch", async () => {
@@ -153,13 +158,18 @@ describe("services/inbox - conversas", () => {
   });
 
   it("markConversationsRead / Unread zeram ou setam unread_count em lote", async () => {
-    await markConversationsRead(["c1"]);
+    await markConversationsRead(["c1"], "t-1");
     expect(mockSupabase.callsFor("conversations")).toContainEqual(["update", { unread_count: 0 }]);
+    expect(mockSupabase.callsFor("conversations")).toContainEqual(["eq", "client_id", "t-1"]);
     mockSupabase.reset();
-    await markConversationsUnread(["c1"]);
+    await markConversationsUnread(["c1"], "t-1");
     expect(mockSupabase.callsFor("conversations")).toContainEqual(["update", { unread_count: 1 }]);
+    expect(mockSupabase.callsFor("conversations")).toContainEqual(["eq", "client_id", "t-1"]);
+    mockSupabase.reset();
+    await markConversationsUnread(["c1"], "t-1", true);
+    expect(mockSupabase.callsFor("conversations").some((c) => c[0] === "eq")).toBe(false);
     mockSupabase.respond("conversations", { error: new Error("e") });
-    await expect(markConversationsRead(["c1"])).rejects.toThrow("e");
+    await expect(markConversationsRead(["c1"], "t-1")).rejects.toThrow("e");
   });
 });
 
@@ -259,5 +269,16 @@ describe("services/inbox - templates, macros e contadores", () => {
     const calls = mockSupabase.callsFor("tasks");
     expect(calls).toContainEqual(["eq", "client_id", "t-1"]);
     expect(calls).toContainEqual(["not", "status", "in", "(completed,done,cancelled)"]);
+  });
+});
+
+describe("services/inbox - reassignConversationsToLead", () => {
+  it("filtra por client_id e pula o filtro em master view", async () => {
+    await reassignConversationsToLead("a", "b", "t-1");
+    expect(mockSupabase.callsFor("conversations")).toContainEqual(["eq", "client_id", "t-1"]);
+    expect(mockSupabase.callsFor("conversations")).toContainEqual(["eq", "lead_id", "a"]);
+    mockSupabase.reset();
+    await reassignConversationsToLead("a", "b", "t-1", true);
+    expect(mockSupabase.callsFor("conversations")).not.toContainEqual(["eq", "client_id", "t-1"]);
   });
 });

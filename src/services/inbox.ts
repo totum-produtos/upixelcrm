@@ -88,14 +88,20 @@ export async function listMessagesByConversationIds(
   return (data ?? []).reverse();
 }
 
-export async function markConversationsRead(convIds: string[]): Promise<void> {
-  const { error } = await supabase.from("conversations").update({ unread_count: 0 }).in("id", convIds);
+// Ações em massa: filtro explícito de client_id além da RLS (ADR-UPX-007);
+// masterView (master operando entre tenants) pula o filtro.
+export async function markConversationsRead(convIds: string[], clientId: string, masterView = false): Promise<void> {
+  let q = supabase.from("conversations").update({ unread_count: 0 }).in("id", convIds);
+  if (!masterView) q = q.eq("client_id", clientId);
+  const { error } = await q;
   if (error) throw error;
 }
 
 /** Marca como não lida (ação em massa) — mesmo efeito visual de uma msg nova chegando. */
-export async function markConversationsUnread(convIds: string[]): Promise<void> {
-  const { error } = await supabase.from("conversations").update({ unread_count: 1 }).in("id", convIds);
+export async function markConversationsUnread(convIds: string[], clientId: string, masterView = false): Promise<void> {
+  let q = supabase.from("conversations").update({ unread_count: 1 }).in("id", convIds);
+  if (!masterView) q = q.eq("client_id", clientId);
+  const { error } = await q;
   if (error) throw error;
 }
 
@@ -165,11 +171,15 @@ export async function updateConversationLastMessage(
 export async function updateConversationsStatus(
   convIds: string[],
   status: string,
+  clientId: string,
   snoozedUntil?: string,
+  masterView = false,
 ): Promise<void> {
   const patch: TablesUpdate<"conversations"> = { status, updated_at: new Date().toISOString() };
   if (snoozedUntil !== undefined) patch.snoozed_until = snoozedUntil;
-  const { error } = await supabase.from("conversations").update(patch).in("id", convIds);
+  let q = supabase.from("conversations").update(patch).in("id", convIds);
+  if (!masterView) q = q.eq("client_id", clientId);
+  const { error } = await q;
   if (error) throw error;
 }
 
@@ -221,11 +231,12 @@ export async function updateMessageMetadata(
 export async function reassignConversationsToLead(
   fromLeadId: string,
   toLeadId: string,
+  clientId: string,
+  masterView = false,
 ): Promise<void> {
-  const { error } = await supabase
-    .from("conversations")
-    .update({ lead_id: toLeadId })
-    .eq("lead_id", fromLeadId);
+  let q = supabase.from("conversations").update({ lead_id: toLeadId }).eq("lead_id", fromLeadId);
+  if (!masterView) q = q.eq("client_id", clientId);
+  const { error } = await q;
   if (error) throw error;
 }
 

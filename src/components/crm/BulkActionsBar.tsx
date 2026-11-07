@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { useSelection } from "@/contexts/SelectionContext";
 import { useAppState } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTenantScope } from "@/hooks/useTenantScope";
 import { useCustomFields } from "@/hooks/useCustomFields";
 import { listActiveAgents } from "@/services/users";
 import * as leadsRepo from "@/services/leads";
@@ -47,6 +48,7 @@ export function BulkActionsBar() {
   const { selectionMode, selectedIds, selectedCount, clearSelection, exitSelectionMode } = useSelection();
   const { pipelines, columns, currentPipelineId, refreshData, addTimelineEvent } = useAppState();
   const { user } = useAuth();
+  const { clientId, masterView } = useTenantScope();
   const { definitions: customFields } = useCustomFields();
 
   const { data: agents = [] } = useQuery<{ id: string; name: string }[]>({
@@ -102,7 +104,7 @@ export function BulkActionsBar() {
     if (!moveTarget) return;
     setMoving(true);
     try {
-      await leadsRepo.bulkMoveLeads(ids, moveTarget);
+      await leadsRepo.bulkMoveLeads(ids, moveTarget, clientId, masterView);
       const targetCol = columns.find((c) => c.id === moveTarget);
       const targetPipe = pipelines.find((p) => p.id === targetCol?.pipeline_id);
       const targetName = targetCol
@@ -137,7 +139,7 @@ export function BulkActionsBar() {
     try {
       // Sem evento de timeline aqui de propósito: o lead está sendo apagado,
       // então não há onde esse evento seria exibido depois.
-      await leadsRepo.bulkDeleteLeads(ids);
+      await leadsRepo.bulkDeleteLeads(ids, clientId, masterView);
       toast.success(`${ids.length} lead(s) excluído(s).`);
       setDeleteConfirmOpen(false);
       await refreshData();
@@ -158,7 +160,7 @@ export function BulkActionsBar() {
     }
     setTagging(true);
     try {
-      const failures = await leadsRepo.bulkAddTag(ids, tag);
+      const failures = await leadsRepo.bulkAddTag(ids, tag, clientId, masterView);
       if (failures > 0) {
         toast.error(`Tag aplicada com ${failures} falha(s) de ${ids.length} lead(s). Tente novamente.`);
       } else {
@@ -213,10 +215,10 @@ export function BulkActionsBar() {
     setEditing(true);
     try {
       if (selectedStandard?.type === "agent") {
-        await leadsRepo.bulkUpdateLeadStandardField(ids, selectedStandard.key, editValue === "__none__" ? null : editValue);
+        await leadsRepo.bulkUpdateLeadStandardField(ids, selectedStandard.key, editValue === "__none__" ? null : editValue, clientId, masterView);
       } else if (selectedStandard) {
         const value = selectedStandard.type === "number" ? Number(editValue) : editValue.trim();
-        await leadsRepo.bulkUpdateLeadStandardField(ids, selectedStandard.key, value);
+        await leadsRepo.bulkUpdateLeadStandardField(ids, selectedStandard.key, value, clientId, masterView);
       } else if (selectedCustom) {
         await leadsRepo.bulkUpdateLeadCustomField(ids, selectedCustom.slug, editValue.trim());
       } else {
