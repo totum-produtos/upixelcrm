@@ -1,90 +1,88 @@
-# Handoff BuildOps, 2026-11-07
+# Handoff BuildOps, noite de 2026-11-07
 
 **Para:** Rael
 **Plano de referência:** `docs/dev/PLANO-ADEQUACAO-BUILDOPS.md` (POP-014-B)
-**PR:** totum-produtos/upixelcrm#122
-**Execução:** Opus 5.5 orquestrando, subagentes Sonnet 5.5 (tsc, ADRs, TODO/BUGS) e Haiku 5.5 (faxina de docs). Tudo revisado pelo orquestrador antes do commit.
+**Modo:** autônomo, com merge e push autorizados pelo Rael antes de dormir
+**Orquestração:** Opus 5.5 (eu) revisando tudo. Subagentes Sonnet 5.5 fizeram testes e refactors, e um Haiku 5.5 fez a faxina de docs. Cada refactor rodou numa cópia isolada do repo. Toda mudança passou pelo gate de CI antes do merge.
 
 ---
 
 ## 1. Placar
 
-| Indicador | Antes (manhã) | Agora | Meta do plano |
-|---|---|---|---|
-| Erros de `tsc` | 8 | **0** | 0 ✅ |
-| Testes falhando | 5 de 93 | **0 de 94** | 0 ✅ |
-| CI em PR | não existia | **ativa** (`pr-ci.yml`, 1min46s) | sim ✅ |
-| Cobertura (lib/services/hooks) | não medida | **4,33%** das linhas | medida ✅ |
-| `.md` soltos na raiz | 29 | **7** | ≤ 6 (quase) |
-| ADRs | 0 | **6** | 6 ✅ |
-| PROJECT_CARD | não existia | **criado** (com lacunas, ver seção 4) | ✅ |
-| Warnings de lint | 509 | 509 | não piorar ✅ |
-
-**Fase 1: concluída**, faltando só a branch protection, que é com você.
-**Fase 2: concluída**, faltando o item 2.3 (destino dos `.sql` e das pastas soltas) e o 2.6 (graphify), ver seção 4.
-
----
-
-## 2. O que foi feito, commit por commit
-
-| Commit | O que muda | Risco |
+| Indicador | Início da noite | Agora |
 |---|---|---|
-| `test(cb-01)` | O teste chamava `getAccessState`, que **nunca existiu**. Foi reescrito contra `evaluateProfileAccess`, a função real usada pelo AuthContext. Ganhou também um caso novo (master pendente). **Nenhuma linha de auth mudou.** | Baixo. Só o teste mudou, mas é área sensível, então vale você olhar |
-| `fix(dashboard)` | O nome das etapas no card de pipeline e o texto da atividade recente **apareciam vazios em produção**. A página lia `stage.stage` e `activity.description`, e a RPC devolve `name` e `content`. Também corrige o tipo no PreferencesPanel (a lógica não mudou). | Baixo. É a única mudança visível pro usuário |
-| `ci` | `pr-ci.yml` novo, que roda lint, typecheck, testes com cobertura e build em todo PR. O `deploy.yml` também ganhou typecheck. Scripts novos: `npm run typecheck` e `npm run test:coverage`. | Nenhum em runtime |
-| `docs(adr)` | ADR-UPX-001 a 006 em `docs/decisions/` e `PROJECT_CARD.md` | Nenhum |
-| `docs: reconcilia` | TODO.md e BUGS.md conferidos contra o código atual, cada item com evidência | Nenhum |
-| `docs: organiza` | 23 `.md` movidos da raiz para `docs/history`, `docs/dev` e `docs/dev/issues` com `git mv`, o que preserva o histórico. CLAUDE.md atualizado com números reais | Nenhum |
-
-Uma correção minha sobre o trabalho dos subagentes: o agente da faxina tinha editado um comentário dentro de `supabase/migrations-pending/`. **Reverti**, porque `supabase/` é No-Fly Zone.
-
----
-
-## 3. O que a auditoria revelou e você precisa saber
-
-### Segurança (ABERTO, do BUGS.md reconciliado)
-1. **SEC-1: o push de mensagem nova provavelmente nunca é enviado.** O `send-push` valida o chamador com `auth.getUser()`, mas os webhooks de WhatsApp e Instagram chamam com a service role, e a falha não gera log. Evidência: `supabase/functions/send-push/index.ts:75-92`.
-2. **SEC-2: vazamento entre tenants.** O `whatsapp-status-probe` não confere o tenant de quem chama. Qualquer usuário logado de qualquer tenant que saiba o UUID de uma integração consegue ler o status dela. Evidência: `supabase/functions/whatsapp-status-probe/index.ts:19-48`.
-3. **BUG-024: regressão.** O botão "Excluir" no detalhe do lead apaga sem pedir confirmação (`src/components/crm/LeadDetail.tsx:1060-1064`). Ele estava marcado como resolvido, mas um refactor reabriu o problema.
-4. **cb-07 sumiu.** A série vai de cb-01 a cb-10, mas o cb-07 não aparece em nenhum commit nem documento.
-
-Os itens 1 e 2 são em edge functions (área de auth/tenant), por isso **não corrigi**. Esperam o seu OK.
-
-### Qualidade
-- **A cobertura é de 4,33%, não "baixa"**. Por isso o ratchet da Fase 3 foi ajustado para 10% → 25% → 50% → 80%. Começar exigindo 40% travaria todo PR.
-- A meta de E2E continua em zero. O Playwright está instalado, mas a config é um template do Lovable.
-- `AppContext.tsx` tem 1184 linhas e baixa **todos os leads** em páginas de 1000 ao abrir o app (`src/contexts/AppContext.tsx:150-262`). É o maior risco de performance com cliente grande.
+| Erros de `tsc` | 8 | **0** |
+| Testes unitários | 93 (5 falhando) | **611, todos verdes** |
+| Testes E2E | 0 | **22** (sem tocar em banco) |
+| Cobertura (lib/services/hooks) | não medida | **45%** das linhas, com threshold que impede queda |
+| CI em PR | não existia | lint + typecheck + testes + cobertura + build + E2E |
+| Warnings de lint | 509 | **479** |
+| `AppContext.tsx` | 1184 linhas | **133** |
+| `InboxPage.tsx` | 1740 linhas | **377** |
+| `ImportPage.tsx` | 979 linhas | **198** |
+| `UsersPage.tsx` | 850 linhas | **146** (PR #130) |
+| `.md` soltos na raiz | 29 | 7 |
 
 ---
 
-## 4. O que ficou pra você (em ordem de urgência)
+## 2. O que foi para produção (PRs mergeados)
 
-### Precisa de você, 5 minutos
-1. **Revisar e mergear o PR totum-produtos/upixelcrm#122.** Você autorizou o merge e eu vou fazer, mas lembre que merge na `main` = deploy em produção na Vercel.
-2. **Ligar a branch protection** em `main`: GitHub → Settings → Branches → Add rule → `main` → "Require status checks" → marcar `quality-gate`. Sem isso o gate avisa, mas não bloqueia.
-3. **Conferir o Dashboard em produção** depois do deploy: o card de pipeline deve mostrar os nomes das etapas.
+| PR | O que é | Risco |
+|---|---|---|
+| totum-produtos/upixelcrm#122 | Gate de CI em PR, main verde, ADRs, faxina de docs. **Corrige o Dashboard** (nome da etapa e texto da atividade apareciam vazios) | Baixo |
+| totum-produtos/upixelcrm#123 | **SEC-2**: `whatsapp-status-probe` deixou de vazar o status do WhatsApp entre tenants. **SEC-1**: o push de mensagem nova voltou a ser enviado (antes dava 401 sempre) | Médio, mexe em edge function |
+| totum-produtos/upixelcrm#124 | Cobertura de 4% para 38%. **BUG-024**: "Excluir lead" voltou a pedir confirmação. **Conserto do deploy de edge functions** (detalhe abaixo) | Baixo |
+| totum-produtos/upixelcrm#125 | AppContext dividido por domínio, com menos re-render na app inteira | Médio |
+| totum-produtos/upixelcrm#126 | InboxPage dividida em 13 componentes | Médio |
+| totum-produtos/upixelcrm#127 | E2E com Playwright e job no CI | Nenhum (só teste) |
+| totum-produtos/upixelcrm#128 | **Bug do Kanban**: o card arrastado durante um refresh voltava para a coluna antiga | Baixo |
+| totum-produtos/upixelcrm#129 | ImportPage dividida, com o parsing testado | Médio |
+| totum-produtos/upixelcrm#130 | UsersPage dividida | Médio, a tela mexe em permissões |
 
-### Decisões que só você toma
-4. **OK pra corrigir SEC-1 e SEC-2?** São edge functions com auth/tenant. Eu preparo o diff e você aprova antes do push.
-5. **Item 2.3:** o que fazer com os 3 `.sql` da raiz (`SUPABASE_*.sql`), com `supabase/migrations-pending/` e com as pastas `tmp/`, `audit/`, `CRM SALES/`, `Copywriter/`, `Prompts/`, `Revisão - Julho/`, `Deisgn System/`: arquivar, mover pra `docs/internal/` ou apagar? Pode ter credencial em `.sql`, então isso passa pelo Sentinela.
-6. **Onde ficam os POP-014 A-E e os ADRs D-XXX?** A skill `totum-buildops-orchestrator` cita esses arquivos, mas eles não existem no `totum-house/skills`. Por enquanto usei numeração local (ADR-UPX-xxx).
-7. **Board de tasks:** Linear, GitHub Issues ou Markdown? Até você decidir, ficou em Markdown (TODO.md e BUGS.md).
-
-### Dados que faltam no PROJECT_CARD (marcados "A CONFIRMAR")
-8. URL de produção e domínio raiz. Há conflito no repo: o README fala em `upixel.com.br` e o `docs/CLOUDFLARE_PAGES.md` em `upixel.app`.
-9. Se existe Supabase de staging. Hoje o preview parece usar o banco de produção, o que é um risco para os E2E da Fase 3.
-10. Papel do Kleber, responsável por incidentes, SLA do produto.
-
-### Não feito por limitação técnica
-- **2.6 Graphify:** a CLI `graphify` não está instalada neste ambiente. Fica pra uma sessão onde ela exista.
+### O deploy de edge functions estava quebrado sem ninguém saber
+A CLI do Supabase usada no CI (`version: latest`) passou a exigir `--yes` quando roda sem terminal. Sem a flag, ela abortava com "Nothing was changed". O merge do #123 não subiu nada, e qualquer deploy de function feito pela CI desde que a CLI mudou teve o mesmo destino. Corrigi no #124, adicionei um **redeploy manual por `workflow_dispatch`** e redeployei `send-push` e `whatsapp-status-probe`. O log confirma "Deployed Functions". **Vale você checar se alguma outra function foi alterada recentemente e nunca subiu.**
 
 ---
 
-## 5. Próximo passo sugerido (Fase 3)
+## 3. O que você precisa conferir de manhã (5 a 10 min)
 
-Quando você der OK, sigo com:
-1. Threshold de cobertura em 4% (ratchet: só pode subir).
-2. Testes dos 6 repositórios em `src/services/`, cada um com um subagente Sonnet em paralelo. Isso deve levar a cobertura para perto de 10% em uma sessão.
-3. Config real do Playwright com 5 fluxos críticos rodando contra o preview. **Depende da resposta do item 9** (banco de staging), porque E2E contra o banco de produção cria lixo nos dados reais.
+1. **Dashboard:** o card de pipeline mostra o nome das etapas.
+2. **Push:** mande uma mensagem de WhatsApp para um número conectado e veja se a notificação chega no navegador (correção do SEC-1).
+3. **Kanban:** arraste um card logo depois de abrir o CRM. Ele deve ficar onde você soltou.
+4. **Inbox:** troque de conversa, envie uma mensagem e abra uma imagem.
+5. **Usuários:** como supervisor, edite a role de alguém e bloqueie/desbloqueie.
+6. **Importação:** importe um CSV pequeno num tenant de teste.
+7. **Excluir lead** no detalhe do lead: precisa pedir confirmação.
 
-Custo estimado da Fase 3 com essa divisão de modelos: a maior parte em Sonnet, com Opus só na revisão. É hipótese, não medição.
+Se algo quebrar, cada PR é reversível sozinho pelo botão "Revert" do GitHub, e nenhum deles tem migration.
+
+---
+
+## 4. Decisões que são suas
+
+1. **Branch protection.** GitHub → Settings → Branches → `main` → exigir os checks `quality-gate` e `e2e`. Sem isso, o gate só avisa.
+2. **Isolamento por tenant só via RLS.** Os testes mostraram dezenas de `update`/`delete` em `src/services/*` que filtram só por `id`, sem `client_id`. Nesses pontos o isolamento depende 100% da RLS. Não é furo confirmado, porque a RLS existe, mas o CLAUDE.md pede filtro no código também. Decida entre: (a) confiar na RLS e documentar num ADR, ou (b) adicionar `eq("client_id")` em tudo, o que é um refactor grande. A lista completa está nos testes de `src/test/services/`.
+3. **Testes de segurança de mentira.** 6 dos 7 testes da série cb (cb02, 05, 06, 08, 09, 10) são placeholders que fazem só `expect(true).toBe(true)`. As correções ficam em SQL e edge functions e precisam de banco pra serem testadas de verdade. Não apaguei os placeholders porque apagar teste é decisão sua. Sugestão: trocar por `it.todo` com o motivo, até existir um banco de staging.
+4. **Staging.** Sem um Supabase de staging, os E2E não cobrem login, cadastro nem nenhuma tela logada. É o maior buraco que sobrou.
+5. **Landing PT/EN.** O TODO dizia que as duas páginas eram duplicadas. Não são: são duas landings com design e seções diferentes. Unificar seria redesign. Deixei como está, com um snapshot protegendo as duas.
+6. **CSV com `;`.** O importador não detecta `;`, que é o separador padrão do Excel em português. É melhoria de produto e não fiz.
+7. **Role `admin` na UsersPage.** A tela só reconhece `master` e `supervisor`, e `admin` não ganha nenhum controle. Pode ser bug antigo.
+8. **POP-014 e ADRs D-XXX.** A skill cita esses documentos, mas eles não existem no `totum-house/skills`. Usei a numeração local ADR-UPX-xxx.
+9. **Itens "A CONFIRMAR" no `PROJECT_CARD.md`:** URL de produção, domínio (`upixel.com.br` ou `upixel.app`), responsável por incidentes.
+
+---
+
+## 5. Erros meus durante a noite (transparência)
+
+- Um commit do #125 saiu sem a correção de um import de teste. O gate pegou, eu corrigi no commit seguinte, e nada foi para produção quebrado. Desde então valido sempre numa cópia limpa do repo antes do push.
+- O deploy do #123 não aconteceu na primeira tentativa (o problema da CLI descrito acima). Descobri pela checagem que eu tinha agendado, não por alerta.
+
+---
+
+## 6. Próximos passos sugeridos
+
+1. Staging no Supabase, que destrava E2E das telas logadas.
+2. Decidir o item 2 (RLS ou filtro duplo) e registrar num ADR.
+3. `LeadDetail.tsx` (1143 linhas) é o próximo arquivo grande, no mesmo método: teste de proteção primeiro, refactor depois.
+4. Subir o threshold de cobertura para 50% depois que os testes de hooks entrarem.
+5. Fixar a versão da CLI do Supabase no CI em vez de `latest`. Foi a causa do deploy silencioso de hoje.
