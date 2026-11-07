@@ -14,22 +14,32 @@ Não é uma medição feita antes de começar; serve como ponto de comparação 
 - Entre os high há dompurify, zod, vite e postcss diretos.
 - O job `deps-audit` do PR falha só em critical de produção (`--omit=dev`); o resumo completo fica no `$GITHUB_STEP_SUMMARY`.
 
-## Lighthouse (build com env dummy, `vite preview` em 127.0.0.1:4173, Lighthouse 12, 1 execução, mobile padrão)
+## Lighthouse (build com env dummy, `vite preview` em 127.0.0.1, Lighthouse 12, mobile padrão, 3 execuções)
 
-| Métrica | Baseline `9d9f572` | `main` atual | Meta |
+| Métrica | Baseline 9d9f572 (3 runs) | main 984ed91 (3 runs) | Meta Forja |
 |---|---|---|---|
-| Performance | 78 | 71 | >= 90 |
-| Accessibility | 100 | 100 | n/a |
-| Best Practices | 96 | 96 | n/a |
-| SEO | 100 | 100 | n/a |
-| LCP | 4,1 s | 4,2 s | <= 2,5 s |
+| Performance | 76 / 78 / 77 (mediana 77) | 76 / 76 / 76 (mediana 76) | >= 90 |
+| LCP | 4182 / 4110 / 4107 ms | 4365 / 4368 / 4369 ms | <= 2500 ms |
+| TBT | 115 / 68 / 100 ms | 94 / 64 / 31 ms | <= 200 ms |
 | CLS | 0 | 0 | <= 0,1 |
-| TBT | 30 ms | 280 ms | <= 200 ms |
-| FCP | 3,8 s | 3,9 s | n/a |
 
-Leitura: com uma execução só, TBT e Performance variam bastante entre rodadas; a diferença de TBT (30 vs 280 ms) pode ser ruído. O ponto firme é que LCP (~4 s) está acima da meta nos dois pontos. O bundle principal (`vendor`) tem ~808 kB (253 kB gzip).
-Por isso o job `lighthouse` está como `continue-on-error: true` até a baseline real do CI ser conhecida.
+Leitura:
+- A primeira medição de TBT (280 ms) era ruído; com 3 execuções o TBT ficou igual ou melhor.
+- **LCP piorou de forma consistente em cerca de 260 ms (+6%)** e a nota caiu 1 ponto. Causa não identificada: o chunk `index` cresceu só 3,3 kB (as fatias do AppContext), o que não explica sozinho a diferença. Registrado como regressão a investigar.
+- A meta de LCP (2,5 s) já falhava no baseline. O que pesa é débito anterior: a landing pré-carrega `vendor-charts` (400 kB) e `vendor` (808 kB) sem precisar deles. Corrigir isso está fora do escopo desta adequação e fica para decisão do Rael.
 
 ## Semgrep
 
 Baseline virá da primeira execução no CI (o registry semgrep.dev é bloqueado no ambiente do agente, então não foi possível medir localmente). O job falha apenas por achados novos (`--baseline-commit`); o total da árvore vai para o resumo do job.
+
+## Achados dos testes pgTAP (estáticos, antes do primeiro run no CI)
+
+| Item | Achado | Severidade |
+|---|---|---|
+| cb05 | A migration 20261029 tem erro de sintaxe (`CREATE POLICY` sem `ON public.integrations`) e referencia colunas que não existem (`name`, `api_key`). Ela falha inteira, então o fix provavelmente nunca foi aplicado no Cloud | Alta |
+| cb05 | Mesmo corrigida: `REVOKE SELECT (coluna)` não tem efeito com o GRANT de tabela padrão do Supabase, e a view `integrations_safe` sem `security_invoker` vazaria integrações de todos os tenants | Alta |
+| cb09 | A função de merge faz `UPDATE messages SET lead_id`, coluna que não existe: quebra em runtime. Também não valida tenant | Alta |
+| cb08/cb09 | REVOKE só de authenticated/anon, não de PUBLIC | Média |
+| migrations | Não aplicam do zero: versões duplicadas, 37 arquivos sem prefixo de 14 dígitos, `CREATE TABLE profiles` repetido. Por isso o job `db-tests` está como não bloqueante | Média |
+
+Tudo isso é schema/RLS (área G): nada foi corrigido, aguarda aprovação do Rael ou do Kleber.
