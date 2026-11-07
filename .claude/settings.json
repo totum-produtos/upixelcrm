@@ -1,13 +1,20 @@
 {
+  "enabledPlugins": {
+    "ponytail@ponytail": true,
+    "totum-skills@totum-house": true
+  },
   "extraKnownMarketplaces": {
     "ponytail": {
       "source": {
         "source": "github",
         "repo": "DietrichGebert/ponytail"
       }
+    },
+    "totum-house": {
+      "source": {
+        "source": "github",
+        "repo": "totum-house/skills"
+      }
     }
-  },
-  "enabledPlugins": {
-    "ponytail@ponytail": true
   }
 }
