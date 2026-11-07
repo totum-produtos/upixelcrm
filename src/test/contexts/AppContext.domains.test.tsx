@@ -24,7 +24,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/integrations/supabase/client", async () =>
-  (await import("@/test/helpers/supabaseMock")).supabaseModuleMock());
+  (await import("@/test/helpers/supabaseModuleStub")).supabaseModuleMock());
 vi.mock("@/services/leads", () => mocks.leadsRepo);
 vi.mock("@/services/automations", () => mocks.automationsRepo);
 vi.mock("@/services/users", () => ({ listActiveAgents: vi.fn().mockResolvedValue([]) }));
