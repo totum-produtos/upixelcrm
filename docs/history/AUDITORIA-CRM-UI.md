@@ -15,17 +15,17 @@
 | A1 — faixa morta no kanban | ✅ corrigido | `720e82e` `[crm-B3]` — as 3 causas |
 | A2 — dropdown misturando funis | ✅ corrigido | `52a433d` `[crm-B1]` |
 | A3 — clique no card abre modal | ✅ implementado como Sheet lateral | `7fff699` (refactor) + `f47a0ab` `[crm-B2]` |
-| A4 — link amigável `/leads/<slug>` | 🟠 spec pronta, **não aplicado** | `SPEC-LEAD-SLUG.md`; migration parkeada em `supabase/migrations-pending/` |
-| A5 — bug "Gerenciar Tags" | ✅ corrigido | `9557648` — ver `TAGS-BUG-DIAGNOSE.md` |
+| A4 — link amigável `/leads/<slug>` | 🟠 spec pronta, **não aplicado** | `docs/dev/SPEC-LEAD-SLUG.md`; migration parkeada em `supabase/migrations-pending/` |
+| A5 — bug "Gerenciar Tags" | ✅ corrigido | `9557648` — ver `docs/history/TAGS-BUG-DIAGNOSE.md` |
 | A6-1 — botão Duplicatas quebrado | ✅ corrigido | `0d50063` |
 | A6-2, A6-3 | ✅ = A2 e A5 | — |
-| A6-4 — `addGlobalTag` não persiste | ❌ **ABERTO** | mock ainda em `AppContext.tsx:111`; ver `RELATORIO-CRM-BATCH-20260821.md` |
+| A6-4 — `addGlobalTag` não persiste | ❌ **ABERTO** | mock ainda em `AppContext.tsx:111`; ver `docs/history/RELATORIO-CRM-BATCH-20260821.md` |
 | A6-5 — espaço morto | ✅ = A1 | — |
-| A6-6 — ações só-no-hover | ❌ **ABERTO** | backlog em `TODO-MODAL-PATTERN.md` |
-| A6-7 — board sem responsivo | ❌ **ABERTO** | backlog em `TODO-MODAL-PATTERN.md` |
-| A6-8 — densidade dos campos personalizados | ❌ **ABERTO** | backlog em `TODO-MODAL-PATTERN.md` |
+| A6-6 — ações só-no-hover | ❌ **ABERTO** | backlog em `docs/dev/TODO-MODAL-PATTERN.md` |
+| A6-7 — board sem responsivo | ❌ **ABERTO** | backlog em `docs/dev/TODO-MODAL-PATTERN.md` |
+| A6-8 — densidade dos campos personalizados | ❌ **ABERTO** | backlog em `docs/dev/TODO-MODAL-PATTERN.md` |
 | A6-9 — "Oficina do Corpo" duplicado | ✅ não era bug — dado ruim, confirmado | — |
-| A6-10 — `window.confirm` | ❌ **ABERTO** | backlog em `TODO-MODAL-PATTERN.md` |
+| A6-10 — `window.confirm` | ❌ **ABERTO** | backlog em `docs/dev/TODO-MODAL-PATTERN.md` |
 | Padrão de modais | ✅ documentado e aplicado em 4 de 7 | `8d21446` `[crm-B4]` → `docs/UI-PATTERNS.md` |
 
 **Correção de registro:** a seção sobre o `ColumnConfigModal` afirma "`onClose()` incondicional
@@ -83,22 +83,22 @@ AppLayout                        min-h-[100dvh] flex
 **Não é grid.** É flex row com colunas de largura fixa `w-72` (288px) e `shrink-0`.
 Não existe `grid-template-rows`, não existe `min-h-screen`, não existe `flex-1` em coluna vazia.
 
-Arquivos: [CRMPage.tsx:637-678](src/pages/CRMPage.tsx:637), [KanbanColumn.tsx:144-269](src/components/crm/KanbanColumn.tsx:144), [AppLayout.tsx:36-91](src/components/layout/AppLayout.tsx:36).
+Arquivos: [CRMPage.tsx:637-678](../../src/pages/CRMPage.tsx:637), [KanbanColumn.tsx:144-269](../../src/components/crm/KanbanColumn.tsx:144), [AppLayout.tsx:36-91](../../src/components/layout/AppLayout.tsx:36).
 
 ### Como os cards são renderizados
 
-[KanbanColumn.tsx:227-262](src/components/crm/KanbanColumn.tsx:227) tem **dois caminhos**:
+[KanbanColumn.tsx:227-262](../../src/components/crm/KanbanColumn.tsx:227) tem **dois caminhos**:
 
 - **≤ 20 leads** → render normal, `<div className="space-y-2">` com um `SortableLeadCard` por lead.
 - **> 20 leads** → virtualização com `@tanstack/react-virtual`: um spacer de altura `getTotalSize()` com os cards visíveis em `position:absolute` + `translateY`.
 
-`VIRTUALIZATION_THRESHOLD = 20`, `ESTIMATED_CARD_HEIGHT = 108` ([linhas 20-23](src/components/crm/KanbanColumn.tsx:20)).
+`VIRTUALIZATION_THRESHOLD = 20`, `ESTIMATED_CARD_HEIGHT = 108` ([linhas 20-23](../../src/components/crm/KanbanColumn.tsx:20)).
 
 ### As três causas de espaço vazio, em ordem de probabilidade
 
 #### Causa 1 — altura fixa da coluna (`height: calc(100vh - 220px)`) — **confirmada, é `height`, não `max-height`**
 
-[KanbanColumn.tsx:223](src/components/crm/KanbanColumn.tsx:223)
+[KanbanColumn.tsx:223](../../src/components/crm/KanbanColumn.tsx:223)
 
 Uma coluna com 1 card ocupa ~700px de altura em tela de 1080p, dos quais ~600px são fundo vazio.
 Isso é **em parte intencional** (área de drop grande é boa UX em kanban), mas é o candidato número 1
@@ -120,14 +120,14 @@ Mas o código pede `100vh − 220px`. **68px de folga morta no rodapé de toda c
 independente de conteúdo. E como o pai é `flex` com `align-items: stretch`, a coluna é esticada
 até `100vh−152px` enquanto o filho fica em `100vh−220px` → o gap fica visível como fundo.
 
-Com descrição de etapa ([linha 211](src/components/crm/KanbanColumn.tsx:211)) a conta muda de novo —
+Com descrição de etapa ([linha 211](../../src/components/crm/KanbanColumn.tsx:211)) a conta muda de novo —
 o número mágico `220` não acompanha nenhuma das variações.
 
 #### Causa 3 — estimativa da virtualização inflada (só em colunas com > 20 leads)
 
 `ESTIMATED_CARD_HEIGHT = 108`. Um card real hoje mede ~85–95px na configuração comum
 (nome + telefone + avatar + borda), porque quase toda linha do card é condicional
-([SortableLeadCard.tsx:168-222](src/components/crm/SortableLeadCard.tsx:168)) — sem tags, sem valor,
+([SortableLeadCard.tsx:168-222](../../src/components/crm/SortableLeadCard.tsx:168)) — sem tags, sem valor,
 sem segmento, sem próxima tarefa, o card encolhe bastante.
 
 `getTotalSize()` usa a estimativa para todo item ainda não medido. Com 100 leads e ~20 medidos,
@@ -135,9 +135,9 @@ o spacer fica ~1.500px maior que o conteúdo real → **espaço morto grande no 
 que encolhe conforme você rola (a assinatura clássica de estimativa errada).
 
 > **Descartado explicitamente:** placeholder do dnd-kit que não colapsa. O `SortableContext` recebe
-> todos os ids ([linha 227](src/components/crm/KanbanColumn.tsx:227)), o `DragOverlay` está correto
-> ([CRMPage.tsx:680](src/pages/CRMPage.tsx:680)), e o card em drag usa `opacity: 0.4` sem remover do fluxo
-> ([SortableLeadCard.tsx:100](src/components/crm/SortableLeadCard.tsx:100)). Não há placeholder fantasma.
+> todos os ids ([linha 227](../../src/components/crm/KanbanColumn.tsx:227)), o `DragOverlay` está correto
+> ([CRMPage.tsx:680](../../src/pages/CRMPage.tsx:680)), e o card em drag usa `opacity: 0.4` sem remover do fluxo
+> ([SortableLeadCard.tsx:100](../../src/components/crm/SortableLeadCard.tsx:100)). Não há placeholder fantasma.
 
 ### O que falta para eu escolher o fix certo
 
@@ -155,7 +155,7 @@ e baixar `ESTIMATED_CARD_HEIGHT` para ~90. Duas linhas.
 
 ## A2 — Dropdown "Etapas do Funil" — **confirmado**
 
-**Arquivo:** [LeadProfilePage.tsx:553-567](src/pages/LeadProfilePage.tsx:553)
+**Arquivo:** [LeadProfilePage.tsx:553-567](../../src/pages/LeadProfilePage.tsx:553)
 
 ```tsx
 <Select value={lead.column_id} onValueChange={...}>
@@ -171,19 +171,19 @@ e baixar `ESTIMATED_CARD_HEIGHT` para ~90. Duas linhas.
 
 | Pergunta | Resposta |
 |---|---|
-| `columns` vem flat, de todos os pipelines? | **Sim.** [AppContext.tsx:285](src/contexts/AppContext.tsx:285) documenta a decisão: carrega todas as colunas de uma vez, "não por pipeline" — rebuscar a cada troca de funil seria desperdício. |
-| `columns.pipeline_id` está populado? | **Sim.** Mapeado no fetch ([AppContext.tsx:188](src/contexts/AppContext.tsx:188)) e tipado em [types/index.ts:24](src/types/index.ts:24). Usado em produção em `moveLeadToPipeline` ([AppContext.tsx:442](src/contexts/AppContext.tsx:442)). |
-| Existe hook/context com os pipelines? | **Sim, o mesmo.** `useAppState()` já expõe `pipelines` ([AppContext.tsx:26, 1043](src/contexts/AppContext.tsx:26)). O `LeadProfilePage` só não desestrutura ([linha 75-78](src/pages/LeadProfilePage.tsx:75)). |
-| Quantos pipelines existem no tenant? | Variável por tenant. Todo pipeline novo nasce com as etapas **"Novos Leads" / "Qualificação" / "Fechamento"** ([AppContext.tsx:680-682](src/contexts/AppContext.tsx:680)) — é exatamente por isso que a screenshot mostra "Novos Leads" repetido N vezes e "Qualificação" duplicada. Não é dado ruim: é 1 pipeline a mais = 3 etapas homônimas a mais no dropdown. |
+| `columns` vem flat, de todos os pipelines? | **Sim.** [AppContext.tsx:285](../../src/contexts/AppContext.tsx:285) documenta a decisão: carrega todas as colunas de uma vez, "não por pipeline" — rebuscar a cada troca de funil seria desperdício. |
+| `columns.pipeline_id` está populado? | **Sim.** Mapeado no fetch ([AppContext.tsx:188](../../src/contexts/AppContext.tsx:188)) e tipado em [types/index.ts:24](../../src/types/index.ts:24). Usado em produção em `moveLeadToPipeline` ([AppContext.tsx:442](../../src/contexts/AppContext.tsx:442)). |
+| Existe hook/context com os pipelines? | **Sim, o mesmo.** `useAppState()` já expõe `pipelines` ([AppContext.tsx:26, 1043](../../src/contexts/AppContext.tsx:26)). O `LeadProfilePage` só não desestrutura ([linha 75-78](../../src/pages/LeadProfilePage.tsx:75)). |
+| Quantos pipelines existem no tenant? | Variável por tenant. Todo pipeline novo nasce com as etapas **"Novos Leads" / "Qualificação" / "Fechamento"** ([AppContext.tsx:680-682](../../src/contexts/AppContext.tsx:680)) — é exatamente por isso que a screenshot mostra "Novos Leads" repetido N vezes e "Qualificação" duplicada. Não é dado ruim: é 1 pipeline a mais = 3 etapas homônimas a mais no dropdown. |
 
 ### Por que é 🔴 crítico e não cosmético
 
 Duas etapas com o mesmo nome e nenhum diferenciador visual. Escolher a errada **move o lead
 para outro funil** — e `updateLead({ column_id })` não passa por `moveLeadToPipeline`,
 então a troca de pipeline acontece sem o timeline de "mudou de funil" que a rota correta registra
-([AppContext.tsx:449-474](src/contexts/AppContext.tsx:449)). Perda silenciosa de rastreabilidade.
+([AppContext.tsx:449-474](../../src/contexts/AppContext.tsx:449)). Perda silenciosa de rastreabilidade.
 
-**O board não tem esse problema:** [CRMPage.tsx:282](src/pages/CRMPage.tsx:282) filtra
+**O board não tem esse problema:** [CRMPage.tsx:282](../../src/pages/CRMPage.tsx:282) filtra
 `columns.filter(c => c.pipeline_id === currentPipelineId)`. Só o perfil do lead esqueceu.
 
 **Fix B1 é exatamente o pseudo-código do prompt** e é seguro — `pipelines` já está disponível,
@@ -195,17 +195,17 @@ nenhum fetch novo. Estimo ~25 linhas.
 
 ### Situação atual
 
-- [CRMPage.tsx:652](src/pages/CRMPage.tsx:652): `onLeadClick={(lead) => navigate(`/leads/${lead.id}`)}`
-- [SortableLeadCard.tsx:103-110](src/components/crm/SortableLeadCard.tsx:103): `handleCardClick` respeita `selectionMode` e delega para `onClick()`. **Já está desacoplado da navegação** — trocar o handler no CRMPage basta, o card não muda.
+- [CRMPage.tsx:652](../../src/pages/CRMPage.tsx:652): `onLeadClick={(lead) => navigate(`/leads/${lead.id}`)}`
+- [SortableLeadCard.tsx:103-110](../../src/components/crm/SortableLeadCard.tsx:103): `handleCardClick` respeita `selectionMode` e delega para `onClick()`. **Já está desacoplado da navegação** — trocar o handler no CRMPage basta, o card não muda.
 
 ### `LeadProfilePage` cabe num modal?
 
 **Não como está.** É um componente de **1.089 linhas** que:
 
-- lê `useParams<{id}>()` diretamente ([linha 72](src/pages/LeadProfilePage.tsx:72)) — precisaria aceitar `leadId` como prop;
-- renderiza o próprio `AppLayout` ([import linha 5](src/pages/LeadProfilePage.tsx:5)) — sidebar + header dentro de um Dialog seria absurdo;
+- lê `useParams<{id}>()` diretamente ([linha 72](../../src/pages/LeadProfilePage.tsx:72)) — precisaria aceitar `leadId` como prop;
+- renderiza o próprio `AppLayout` ([import linha 5](../../src/pages/LeadProfilePage.tsx:5)) — sidebar + header dentro de um Dialog seria absurdo;
 - tem 4 abas (`dados` / notas / tarefas / timeline) + 4 dialogs aninhados próprios (`showTagModal`, `showManageTags`, `showAddField`, `showMergeModal`);
-- chama `navigate()` internamente ([linha 1001](src/pages/LeadProfilePage.tsx:1001), no merge de leads).
+- chama `navigate()` internamente ([linha 1001](../../src/pages/LeadProfilePage.tsx:1001), no merge de leads).
 
 Reusar por wrapper exige: extrair o miolo para `<LeadDetail leadId>`, deixar `LeadProfilePage`
 como casca `AppLayout + LeadDetail`, e o modal montar `LeadDetail` direto. **É refactor de verdade,
@@ -231,22 +231,22 @@ e o `Esc` ficam confusos (Esc fecha o de dentro, o usuário espera fechar o de f
 
 | Arquivo | Linha |
 |---|---|
-| [TaskRow.tsx](src/components/tasks/TaskRow.tsx:112) | 112 |
-| [ContactsPage.tsx](src/pages/ContactsPage.tsx:144) | 144, 183 |
-| [LeadProfilePage.tsx](src/pages/LeadProfilePage.tsx:1001) | 1001 (pós-merge) |
-| [InboxPage.tsx](src/pages/InboxPage.tsx:1237) | 1237, 1442 |
-| [AutomationRunsPage.tsx](src/pages/AutomationRunsPage.tsx:90) | 90 |
-| [TasksPage.tsx](src/pages/TasksPage.tsx:249) | 249 |
-| [DuplicatesPage.tsx](src/pages/DuplicatesPage.tsx:75) | 75 |
-| [CRMPage.tsx](src/pages/CRMPage.tsx:652) | 652 ← **único que vira modal** |
+| [TaskRow.tsx](../../src/components/tasks/TaskRow.tsx:112) | 112 |
+| [ContactsPage.tsx](../../src/pages/ContactsPage.tsx:144) | 144, 183 |
+| [LeadProfilePage.tsx](../../src/pages/LeadProfilePage.tsx:1001) | 1001 (pós-merge) |
+| [InboxPage.tsx](../../src/pages/InboxPage.tsx:1237) | 1237, 1442 |
+| [AutomationRunsPage.tsx](../../src/pages/AutomationRunsPage.tsx:90) | 90 |
+| [TasksPage.tsx](../../src/pages/TasksPage.tsx:249) | 249 |
+| [DuplicatesPage.tsx](../../src/pages/DuplicatesPage.tsx:75) | 75 |
+| [CRMPage.tsx](../../src/pages/CRMPage.tsx:652) | 652 ← **único que vira modal** |
 
 ---
 
 ## A4 — Link amigável `/leads/<slug>` — 🟠 só documentado
 
-Detalhamento completo vai em `SPEC-LEAD-SLUG.md` (Bloco C). Do lado do impacto, o que a auditoria achou:
+Detalhamento completo vai em `docs/dev/SPEC-LEAD-SLUG.md` (Bloco C). Do lado do impacto, o que a auditoria achou:
 
-- Rota única hoje: [App.tsx:152](src/App.tsx:152) — `/leads/:id`.
+- Rota única hoje: [App.tsx:152](../../src/App.tsx:152) — `/leads/:id`.
 - 8 call-sites (tabela em A3) precisariam preferir slug quando disponível.
 - **Colisão de rota preexistente** (ver A6-1): já existe um `navigate("/leads/duplicates")` no código.
   Qualquer resolvedor `:idOrSlug` precisa tratar segmentos reservados, ou vai tentar resolver
@@ -264,7 +264,7 @@ Investigação completa em **[TAGS-BUG-DIAGNOSE.md](TAGS-BUG-DIAGNOSE.md)**. Res
 - Causa raiz provável: **schema drift** — o código consulta `tags.client_id`, os tipos gerados
   do banco de prod dizem que a coluna não existe (tabela tem `tenant_id NOT NULL`).
 - O erro dispara **no load de `/crm`**, não só no modal: `useTags()` é chamado em
-  [CRMPage.tsx:175](src/pages/CRMPage.tsx:175) **e** em [TagsManager.tsx:30](src/components/crm/TagsManager.tsx:30).
+  [CRMPage.tsx:175](../../src/pages/CRMPage.tsx:175) **e** em [TagsManager.tsx:30](../../src/components/crm/TagsManager.tsx:30).
   Isso explica o "quando estou na tela de leads dá erro".
 - **Não consolidar** com a Correção 1 do outro ciclo. Causas diferentes.
 - Falta 1 query em prod para fechar (não consegui rodar — MCP do Supabase não autenticado nesta sessão).
@@ -278,9 +278,9 @@ Priorizado. **Nada implementado** — tudo aqui é candidato a fix.
 ### 🔴 Funcionais
 
 **A6-1 — Botão "Duplicatas" leva para rota inexistente**
-[CRMPage.tsx:153](src/pages/CRMPage.tsx:153) faz `navigate("/leads/duplicates")`.
-Não existe essa rota. Ela cai no curinga `/leads/:id` ([App.tsx:152](src/App.tsx:152)) com `id="duplicates"`,
-abrindo o `LeadProfilePage` com lead inexistente. A rota certa é `/duplicates` ([App.tsx:176](src/App.tsx:176)).
+[CRMPage.tsx:153](../../src/pages/CRMPage.tsx:153) faz `navigate("/leads/duplicates")`.
+Não existe essa rota. Ela cai no curinga `/leads/:id` ([App.tsx:152](../../src/App.tsx:152)) com `id="duplicates"`,
+abrindo o `LeadProfilePage` com lead inexistente. A rota certa é `/duplicates` ([App.tsx:176](../../src/App.tsx:176)).
 **Fix de 1 linha.** Não estava no prompt — achado da varredura.
 
 **A6-2 — Dropdown de etapas mistura pipelines** → A2.
@@ -288,7 +288,7 @@ abrindo o `LeadProfilePage` com lead inexistente. A rota certa é `/duplicates` 
 **A6-3 — Tags quebradas** → A5.
 
 **A6-4 — `addGlobalTag` não persiste**
-[AppContext.tsx:944-948](src/contexts/AppContext.tsx:944) só faz `setGlobalTags` em memória e
+[AppContext.tsx:944-948](../../src/contexts/AppContext.tsx:944) só faz `setGlobalTags` em memória e
 dá `toast.success("Tag criada globalmente")`. A tag some no F5. O toast mente.
 
 ### 🟡 UI / UX
@@ -296,10 +296,10 @@ dá `toast.success("Tag criada globalmente")`. A tag some no F5. O toast mente.
 **A6-5 — Espaço morto no rodapé de toda coluna** → A1, causas 1 e 2.
 
 **A6-6 — Ações do card só aparecem no hover**
-[SortableLeadCard.tsx:142](src/components/crm/SortableLeadCard.tsx:142) — `opacity-0 group-hover:opacity-100`
+[SortableLeadCard.tsx:142](../../src/components/crm/SortableLeadCard.tsx:142) — `opacity-0 group-hover:opacity-100`
 no bloco com WhatsApp, Ações de Tempo e grip. **Inacessível em touch** (sem hover em tablet).
-Mesmo padrão nos botões de editar/excluir tag ([TagsManager.tsx:153](src/components/crm/TagsManager.tsx:153))
-e nos de editar/excluir funil ([CRMPage.tsx:522,529](src/pages/CRMPage.tsx:522)).
+Mesmo padrão nos botões de editar/excluir tag ([TagsManager.tsx:153](../../src/components/crm/TagsManager.tsx:153))
+e nos de editar/excluir funil ([CRMPage.tsx:522,529](../../src/pages/CRMPage.tsx:522)).
 
 **A6-7 — Board não é responsivo**
 `board-container` é flex row com `w-72 shrink-0` e sem nenhum breakpoint. Em mobile vira
@@ -307,7 +307,7 @@ scroll horizontal com coluna de 288px numa viewport de 375px. Não há caminho `
 da tela. Se mobile importa, é escopo próprio — não cabe em B3.
 
 **A6-8 — "Campos personalizados" com muito espaço em branco (screenshot 2)**
-[LeadProfilePage.tsx:573-600](src/pages/LeadProfilePage.tsx:573) — cada definição vira uma linha
+[LeadProfilePage.tsx:573-600](../../src/pages/LeadProfilePage.tsx:573) — cada definição vira uma linha
 via `DynamicFieldRenderer` dentro de `space-y-1`, sem colapsar campo vazio. Diferente dos
 "Informações de contato", que usam `EditableDataRow`. Duas densidades visuais diferentes na mesma coluna.
 
@@ -318,8 +318,8 @@ O valor foi digitado (ou importado) errado no campo Faturamento. Vale considerar
 "Faturamento Mensal" como `number`/`currency` na definição do campo — mas é configuração do tenant, não código.
 
 **A6-10 — `confirm()` nativo do browser para excluir tag**
-[TagsManager.tsx:158](src/components/crm/TagsManager.tsx:158) usa `window.confirm`. O projeto já tem
-`AlertDialog` do shadcn e usa em outros pontos ([LeadProfilePage.tsx:31-34](src/pages/LeadProfilePage.tsx:31)).
+[TagsManager.tsx:158](../../src/components/crm/TagsManager.tsx:158) usa `window.confirm`. O projeto já tem
+`AlertDialog` do shadcn e usa em outros pontos ([LeadProfilePage.tsx:31-34](../../src/pages/LeadProfilePage.tsx:31)).
 Inconsistência visual.
 
 ---
@@ -331,22 +331,22 @@ botão `disabled + loading` durante o request.
 
 | Modal | Fecha só no sucesso? | `disabled` durante request? | Veredito |
 |---|---|---|---|
-| [`LeadFormModal`](src/components/crm/LeadFormModal.tsx:266) | — | ✅ `submitting` | parcial |
-| [`AddTagModal`](src/components/crm/AddTagModal.tsx:26) | ✅ | ✅ `loading` | **OK** |
-| [`CreateTagModal`](src/components/crm/CreateTagModal.tsx:21) | ❌ | ❌ | **fora do padrão** |
-| [`CreateTaskModal`](src/components/crm/CreateTaskModal.tsx:28) | ✅ | ✅ `loading` | **OK** |
-| [`MergeLeadsModal`](src/components/crm/MergeLeadsModal.tsx:30) | ✅ | ✅ `loading` | **OK** |
-| [`ColumnConfigModal`](src/components/crm/ColumnConfigModal.tsx:96) | ❌ `onClose()` incondicional em 5 pontos | ❌ | **fora do padrão** |
-| [`TagsManager`](src/components/crm/TagsManager.tsx:53) (sub-dialog Nova Tag) | ❌ `setOpen(false)` sempre, mesmo com erro | ❌ | **fora do padrão** |
-| [`KanbanColumn`](src/components/crm/KanbanColumn.tsx:134) (Transferir leads) | ❌ + `toast.success` antes de saber o resultado | ❌ | **fora do padrão** |
+| [`LeadFormModal`](../../src/components/crm/LeadFormModal.tsx:266) | — | ✅ `submitting` | parcial |
+| [`AddTagModal`](../../src/components/crm/AddTagModal.tsx:26) | ✅ | ✅ `loading` | **OK** |
+| [`CreateTagModal`](../../src/components/crm/CreateTagModal.tsx:21) | ❌ | ❌ | **fora do padrão** |
+| [`CreateTaskModal`](../../src/components/crm/CreateTaskModal.tsx:28) | ✅ | ✅ `loading` | **OK** |
+| [`MergeLeadsModal`](../../src/components/crm/MergeLeadsModal.tsx:30) | ✅ | ✅ `loading` | **OK** |
+| [`ColumnConfigModal`](../../src/components/crm/ColumnConfigModal.tsx:96) | ❌ `onClose()` incondicional em 5 pontos | ❌ | **fora do padrão** |
+| [`TagsManager`](../../src/components/crm/TagsManager.tsx:53) (sub-dialog Nova Tag) | ❌ `setOpen(false)` sempre, mesmo com erro | ❌ | **fora do padrão** |
+| [`KanbanColumn`](../../src/components/crm/KanbanColumn.tsx:134) (Transferir leads) | ❌ + `toast.success` antes de saber o resultado | ❌ | **fora do padrão** |
 | `ApiSettingsModal` (outro ciclo) | não auditado | — | ⚠️ avisar antes de tocar |
 
-O caso mais visível é `TagsManager.handleSave` ([linhas 53-71](src/components/crm/TagsManager.tsx:53)):
+O caso mais visível é `TagsManager.handleSave` ([linhas 53-71](../../src/components/crm/TagsManager.tsx:53)):
 `await createTag(...)` e em seguida `setOpen(false)` incondicional. `createTag` retorna `null` no erro
 e já mostrou o toast vermelho — mas o modal fecha e o usuário perde o que digitou.
 **É exatamente o comportamento que a regra nova proíbe.**
 
-`KanbanColumn.handleTransfer` ([linha 134](src/components/crm/KanbanColumn.tsx:134)) é pior:
+`KanbanColumn.handleTransfer` ([linha 134](../../src/components/crm/KanbanColumn.tsx:134)) é pior:
 dispara N `onMoveLead` sem `await` e anuncia `"N leads transferidos"` imediatamente.
 
 ---

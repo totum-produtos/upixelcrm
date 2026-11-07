@@ -53,18 +53,18 @@ começou — você aprovou e mergeou pelo GitHub, não pela ordem deste batch. N
 
 Todos em `batch/audit-and-prep`, exceto os dois marcados *(untracked)*:
 
-- `AMBIENTE-DRYRUN.md` — decisão de rodar Correção 0 contra Cloud `xusdh`, não `supa.grupototum.com`
-- `PC-040-RECONCILIACAO.md` — **20 órfãs, não 36** (número mudou desde o doc antigo); nenhuma
+- `docs/history/AMBIENTE-DRYRUN.md` — decisão de rodar Correção 0 contra Cloud `xusdh`, não `supa.grupototum.com`
+- `docs/history/PC-040-RECONCILIACAO.md` — **20 órfãs, não 36** (número mudou desde o doc antigo); nenhuma
   toca `api_keys` por nome; veredito "Correção 1 liberada"
-- `ERROR-LOGS-INSPECAO.md` — schema, RLS, 100% das 1031 linhas com `client_id`/`user_id`/`context`
+- `docs/history/ERROR-LOGS-INSPECAO.md` — schema, RLS, 100% das 1031 linhas com `client_id`/`user_id`/`context`
   vazios; extensão proposta na spec é aditiva pura
 - `docs/CONTRIBUTING.md` — regra de desvio explícito (Correção 4)
-- `ISSUE-send-push-bearer.md` — P1.1
-- `ISSUE-whatsapp-status-probe-auth.md` — P1.2
-- `AUDITORIA-CRM-UI.md` — Bloco A (A1-A6)
-- `TAGS-BUG-DIAGNOSE.md` — Bloco D
-- `SPEC-LEAD-SLUG.md` — Bloco C
-- `AUDITORIA-API-KEYS.md`, `SPEC-LOG-DE-ERROS.md` *(untracked, sem commit, mantendo a regra
+- `docs/dev/issues/ISSUE-send-push-bearer.md` — P1.1
+- `docs/dev/issues/ISSUE-whatsapp-status-probe-auth.md` — P1.2
+- `docs/history/AUDITORIA-CRM-UI.md` — Bloco A (A1-A6)
+- `docs/history/TAGS-BUG-DIAGNOSE.md` — Bloco D
+- `docs/dev/SPEC-LEAD-SLUG.md` — Bloco C
+- `docs/history/AUDITORIA-API-KEYS.md`, `docs/dev/SPEC-LOG-DE-ERROS.md` *(untracked, sem commit, mantendo a regra
   original desta sessão de deixá-los pra sua revisão — ver "Desvios" abaixo)*
 
 ## 🟠 Aguardando aprovação sua
@@ -159,7 +159,7 @@ restritiva. Achados prontos para quando você aprovar a ordem:
 
 ### Bloco C — Spec de slug de lead
 
-- `SPEC-LEAD-SLUG.md` preparada — schema (`slug text`, índice único parcial), regra de geração,
+- `docs/dev/SPEC-LEAD-SLUG.md` preparada — schema (`slug text`, índice único parcial), regra de geração,
   10 call sites levantados, riscos, ordem de execução. Nenhuma migration gerada, nenhum código
   alterado. Aguarda você decidir se prioriza ou vai pro backlog.
 
@@ -172,8 +172,8 @@ restritiva. Achados prontos para quando você aprovar a ordem:
 
 ## Desvios da spec original
 
-1. **AUDITORIA-API-KEYS.md e SPEC-LOG-DE-ERROS.md continuam untracked, sem commit.** O batch
-   pedia para editar `SPEC-LOG-DE-ERROS.md` (Correção 5) e implicitamente commitá-lo. Fiz a
+1. **docs/history/AUDITORIA-API-KEYS.md e docs/dev/SPEC-LOG-DE-ERROS.md continuam untracked, sem commit.** O batch
+   pedia para editar `docs/dev/SPEC-LOG-DE-ERROS.md` (Correção 5) e implicitamente commitá-lo. Fiz a
    edição de conteúdo (nota no topo bloqueando Fase 2+), mas **não commitei** — a instrução
    original da primeira rodada desta sessão foi explicitamente "não commitar, deixar untracked
    pra sua revisão", e nenhuma mensagem sua revogou isso especificamente. Segui a regra que eu
@@ -182,7 +182,7 @@ restritiva. Achados prontos para quando você aprovar a ordem:
    trivial (`git add` + commit).
 2. **Branch `fix/rls-api-keys-tags` do prompt do batch virou só `fix/rls-api-keys`** — o nome
    original pressupunha consolidar o fix de `tags` junto (se a causa fosse RLS). A causa raiz de
-   `tags` é outra (schema drift, não RLS — ver `TAGS-BUG-DIAGNOSE.md`), então não haveria nada de
+   `tags` é outra (schema drift, não RLS — ver `docs/history/TAGS-BUG-DIAGNOSE.md`), então não haveria nada de
    `tags` pra consolidar. Troquei o nome pra refletir o conteúdo real da branch.
 3. **Merge/deploy de tudo que o batch marcava como 🟢** — não segui, pelos motivos já explicados
    na primeira seção deste relatório. Trato isso como o desvio mais importante do documento
@@ -210,5 +210,5 @@ Nesta ordem, do mais rápido para o mais lento:
    trabalho no ciclo paralelo.
 4. **Decidir se quer as duas branches locais pushadas** (o classificador bloqueou minha tentativa)
    — ou revisar puxando este worktree localmente.
-5. **Decidir sobre `AUDITORIA-API-KEYS.md`/`SPEC-LOG-DE-ERROS.md`** ainda untracked — commitar
+5. **Decidir sobre `docs/history/AUDITORIA-API-KEYS.md`/`docs/dev/SPEC-LOG-DE-ERROS.md`** ainda untracked — commitar
    ou manter como estão.

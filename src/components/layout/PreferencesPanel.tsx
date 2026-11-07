@@ -57,7 +57,7 @@ function loadPrefs(): Preferences {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return { ...DEFAULTS };
-    const parsed = JSON.parse(raw) as Partial<Preferences> & { themePreset?: string };
+    const parsed = JSON.parse(raw) as Omit<Partial<Preferences>, "themePreset"> & { themePreset?: string };
     const themePreset =
       parsed.themePreset === "light"
         ? "bw-light"

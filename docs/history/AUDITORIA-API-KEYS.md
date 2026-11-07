@@ -1,7 +1,7 @@
 # Auditoria API Keys — upixelcrm
 
 > **Modo:** somente leitura. Nenhum arquivo de produção foi alterado, nenhuma migration aplicada,
-> nada commitado. Este relatório e o `SPEC-LOG-DE-ERROS.md` são os únicos arquivos criados.
+> nada commitado. Este relatório e o `docs/dev/SPEC-LOG-DE-ERROS.md` são os únicos arquivos criados.
 >
 > **Data:** 2026-08-21 · **Projeto Supabase:** `xusdhzwfkzufupjwbebt` · **Branch:** `claude/upixel-api-audit-6e4e5a`
 >
@@ -672,7 +672,7 @@ RLS em produção (§1.4) e, mesmo que existisse, ela precisa ser reescrita no p
 | RLS ativa em todas as tabelas → não bypassar com service_role no client | ✅ Confirmado — nenhuma chamada do client React usa service_role; só edge functions o fazem, sempre com `Deno.env.get`. |
 | `types.ts` desatualizado (audit #14) — não confiar cegamente | ⚠️ **Desatualizado para este caso específico.** `api_keys` e `error_logs` **já estão** tipadas em `src/integrations/supabase/types.ts` e batem com o `information_schema` real. `untypedFrom("api_keys")` em `src/services/integrations.ts:128` é hoje desnecessário — remove checagem estática sem necessidade real. A landmine continua válida para outras tabelas não auditadas aqui. |
 | 36 migrations aplicadas em prod sem arquivo local (audit #18) | ✅ Confirmado, é a causa raiz de #1.4 acima. Qualquer nova migration de `api_keys` deve primeiro rodar `supabase migration repair` (ver `docs/migration-history-reconciliation.md`) — do contrário `db push` vai falhar de novo. |
-| Sem Sentry / error tracking (audit #12) — por isso a mensagem chega genérica | ✅ Confirmado, zero ocorrências de Sentry/LogRocket/Datadog/Bugsnag no repo. É a motivação do Deliverable 7 (`SPEC-LOG-DE-ERROS.md`). |
+| Sem Sentry / error tracking (audit #12) — por isso a mensagem chega genérica | ✅ Confirmado, zero ocorrências de Sentry/LogRocket/Datadog/Bugsnag no repo. É a motivação do Deliverable 7 (`docs/dev/SPEC-LOG-DE-ERROS.md`). |
 | SW cache bumpa no dashboard — se mexer em UI de API, incrementar cache version | Não verificado nesta rodada (fora do escopo de leitura desta auditoria); manter como lembrete para quem for implementar o fix de UI. |
 | Cookie SSO `.grupototum.com` obrigatório em produção | Não impacta este bug — o fluxo quebra em RLS, antes de qualquer preocupação de cookie cross-domain. Mantido como landmine geral para outras mudanças de auth. |
 
@@ -814,7 +814,7 @@ Não é bug funcional, mas é código redundante a limpar quando a Fase 2 da spe
     return;
   }
   ```
-- [ ] **Feature Log de Erros** — ver `SPEC-LOG-DE-ERROS.md`.
+- [ ] **Feature Log de Erros** — ver `docs/dev/SPEC-LOG-DE-ERROS.md`.
 - [ ] **Cleanup das edge functions 🟡 e 🔴** — priorizar A-01 (`send-push`) e A-02
   (`whatsapp-status-probe`) por serem os únicos com efeito de segurança/funcionalidade já hoje,
   não só potencial.

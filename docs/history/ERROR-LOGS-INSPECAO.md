@@ -1,7 +1,7 @@
 # Inspeção de `error_logs` — antes de estender
 
 > Escopo: Correção 3 do batch de 2026-08-21. Só leitura. Confirma que a decisão de estender
-> `error_logs` (em vez de criar `error_log` do zero, `SPEC-LOG-DE-ERROS.md`) não quebra nada
+> `error_logs` (em vez de criar `error_log` do zero, `docs/dev/SPEC-LOG-DE-ERROS.md`) não quebra nada
 > do que já grava lá hoje.
 
 ## Schema atual (medido em produção, `xusdhzwfkzufupjwbebt`)
@@ -79,13 +79,13 @@ function sendError(args: any[]) {
 2026-08-21 13:45:13  Error fetching tags: {"code":"42703","message":"column tags.client_id does not exist"}
 ```
 
-O bug de `tags` (diagnosticado em `TAGS-BUG-DIAGNOSE.md`) está disparando repetidamente — cada
+O bug de `tags` (diagnosticado em `docs/history/TAGS-BUG-DIAGNOSE.md`) está disparando repetidamente — cada
 carregamento da tela que chama `useTags()` gera uma linha nova. Em volume, é a maior fonte de
 ruído na tabela hoje.
 
 ## A extensão proposta na spec é aditiva ou conflita?
 
-**Aditiva pura, sem conflito.** Todas as colunas novas propostas em `SPEC-LOG-DE-ERROS.md`
+**Aditiva pura, sem conflito.** Todas as colunas novas propostas em `docs/dev/SPEC-LOG-DE-ERROS.md`
 (`tenant_id`, `severity`, `where_source`, `where_backend`, `what_action`, `error_code`, `stack`,
 `user_agent`, `route`) são `ADD COLUMN IF NOT EXISTS`, nenhuma toca as 6 colunas existentes, e
 `message`/`context` são reaproveitadas (não renomeadas) — as 1031 linhas atuais continuam

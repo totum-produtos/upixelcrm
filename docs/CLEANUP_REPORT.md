@@ -35,7 +35,7 @@
 | 10 | `select("*")` + sem índices `(client_id, created_at)` | ⚠️ | Selecionar colunas explícitas em `AppContext.tsx`; criar índices compostos em `tasks`/`timeline_events`. | `AppContext.tsx:133-135,214`; 26 FKs sem índice (advisor perf) |
 | 11 | Cobertura de testes ~5% | ⚠️ | Suite E2E Playwright (login, isolamento de tenant, inbox) + unit de auth/tenant. Playwright config está vazio. | Só 4 testes em `src/test/`; `playwright.config.ts` é wrapper vazio |
 | 12 | RLS multi-permissive degrada performance | ⚠️ | Consolidar políticas sobrepostas (`Tenant isolation` + `Users can ...`) e usar `(select auth.uid())` para evitar re-avaliação por linha. | Advisor perf: 73 `multiple_permissive_policies` + 26 `auth_rls_initplan` |
-| 13 | Sem plano de rollback / DR documentado | ⚠️ | Documentar `deploy/deploy.sh` remoto, procedimento de rollback e backup/restore do Supabase. | `DEPLOYMENT_PLAN.md` cobre deploy, não recuperação |
+| 13 | Sem plano de rollback / DR documentado | ⚠️ | Documentar `deploy/deploy.sh` remoto, procedimento de rollback e backup/restore do Supabase. | `docs/history/DEPLOYMENT_PLAN.md` cobre deploy, não recuperação |
 
 ---
 

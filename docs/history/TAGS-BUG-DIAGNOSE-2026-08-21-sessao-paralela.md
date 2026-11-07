@@ -70,7 +70,7 @@ assumiu o nome errado e usou `untypedFrom` para contornar o erro de tipo, mascar
 real em vez de expor.
 
 **Confirma exatamente o sintoma reportado:** os 8+ registros repetidos de hoje em `error_logs`
-(ver `ERROR-LOGS-INSPECAO.md`) são todos:
+(ver `docs/history/ERROR-LOGS-INSPECAO.md`) são todos:
 
 ```
 Error fetching tags: {"code":"42703","message":"column tags.client_id does not exist"}

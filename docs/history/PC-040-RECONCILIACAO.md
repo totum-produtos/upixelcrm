@@ -1,7 +1,7 @@
 # PC-040 — Reconciliação de migrations (versão leve)
 
 > Escopo: Correção 0 do batch de 2026-08-21. Só inspeção read-only via MCP Supabase contra
-> o Cloud `xusdhzwfkzufupjwbebt` (ver `AMBIENTE-DRYRUN.md`). **Nada foi aplicado.**
+> o Cloud `xusdhzwfkzufupjwbebt` (ver `docs/history/AMBIENTE-DRYRUN.md`). **Nada foi aplicado.**
 > Reconciliação completa das 36 (ver correção do número abaixo) fica em backlog — não é
 > feita agora, por decisão do Rael (ver prompt do batch, Ajuste 3).
 
@@ -67,11 +67,11 @@ migration nova de `api_keys`.
 
 ## Achado extra — `tags` também está no escopo da checagem, com resultado diferente
 
-A tabela `tags` (relevante para o bug "Gerenciar Tags", ver `TAGS-BUG-DIAGNOSE.md`) **já tem
+A tabela `tags` (relevante para o bug "Gerenciar Tags", ver `docs/history/TAGS-BUG-DIAGNOSE.md`) **já tem
 1 policy ativa e correta** (`tenant_isolation_tags`, escopada por `tenant_id` + `role='master'`).
 Não é um caso de RLS ausente como `api_keys` — é outro tipo de bug (schema drift no front).
 **Por isso a Correção 1 NÃO deve ser expandida para incluir `tags`** — ver detalhe completo em
-`TAGS-BUG-DIAGNOSE.md`. Isso contraria a suposição do prompt original (Correção 1 poderia
+`docs/history/TAGS-BUG-DIAGNOSE.md`. Isso contraria a suposição do prompt original (Correção 1 poderia
 "consolidar" com tags se a causa fosse RLS) — aqui não é.
 
 ## Achado extra — colisão de nome em `rls_admin_gates`

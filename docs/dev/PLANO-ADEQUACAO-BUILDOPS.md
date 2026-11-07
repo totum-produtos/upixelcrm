@@ -47,7 +47,7 @@
 | ADR-UPX-001 | Stack canônica: React 18 + Vite + TS strict + Supabase + Vercel. Edge functions deployadas por Actions. | Sim, só formalizar |
 | ADR-UPX-002 | Multi-tenant por subdomínio com RLS por `tenant_id`. Toda mudança em RLS/Auth/Storage exige aprovação do Rael. | Sim (CLAUDE.md No-Fly Zones) |
 | ADR-UPX-003 | Credenciais nunca no repo nem no bundle. Vault é do Sentinela. | Sim (D-007 Totum) |
-| ADR-UPX-004 | Camadas: `services/` (repositório por domínio) → `hooks/` → `pages/`. Pages não chamam Supabase direto. | Parcial (Lotes 1-2 do `totum-state.md`) |
+| ADR-UPX-004 | Camadas: `services/` (repositório por domínio) → `hooks/` → `pages/`. Pages não chamam Supabase direto. | Parcial (Lotes 1-2 do `docs/history/totum-state.md`) |
 | ADR-UPX-005 | Quality Gate obrigatório em PR: lint 0 erros, tsc 0 erros, testes 100% verdes, cobertura ≥ meta da fase. | **Não**, é o que este plano instala |
 | ADR-UPX-006 | Preview Vercel por PR = ambiente canário. Smoke E2E roda contra o preview antes do merge. | Não |
 
@@ -55,7 +55,7 @@
 
 ## 3. Plano faseado (POP-014-B)
 
-Regra do `totum-state.md` continua valendo: **1 movimento = 1 commit = 1 PR pequeno**, build + lint + teste após cada um, quebrou reverte.
+Regra do `docs/history/totum-state.md` continua valendo: **1 movimento = 1 commit = 1 PR pequeno**, build + lint + teste após cada um, quebrou reverte.
 
 ### Fase 1: Estancar a sangria (SLA: 2 dias úteis)
 Objetivo: `main` verde e gate funcionando em PR. Nada de refactor aqui.
@@ -93,13 +93,13 @@ Objetivo: chegar nos thresholds do pipeline BuildOps de forma incremental, sem t
 | 3.1 | Threshold de cobertura no vitest = número medido na Fase 1 (não pode cair) | ratchet | Testador |
 | 3.2 | Testes unitários nos `services/` já criados (leads, users, integrations, inbox, broadcast, automations) | +cobertura nos repositórios | Testador (Sonnet) |
 | 3.3 | Playwright real: substituir config Lovable, criar `e2e/` com 5 fluxos críticos (login, signup+tenant, criar lead, mover no pipeline, enviar mensagem inbox) rodando contra o preview da Vercel | 100% fluxos críticos | Kimi Claw |
-| 3.4 | Subir threshold em degraus: 40% → 60% → 80% nos módulos `lib/`, `services/`, `hooks/`. Pages ficam fora do threshold até o refactor da Fase 4 | 80% em lib/services/hooks | Testador |
+| 3.4 | Subir threshold em degraus: 10% → 25% → 50% → 80% nos módulos (baseline medido: 4,33%) `lib/`, `services/`, `hooks/`. Pages ficam fora do threshold até o refactor da Fase 4 | 80% em lib/services/hooks | Testador |
 | 3.5 | Semgrep com regras de padrões de IA (secrets, `any` em boundary, fetch sem tratamento de erro) como step de `static_analysis` | 0 críticos | Tech Lead |
 
 **Gate de saída:** pipeline BuildOps com `lint_format`, `static_analysis`, `unit_tests`, `integration_tests` (E2E no preview) e `human_approval` funcionando.
 
 ### Fase 4: Débito arquitetural (SLA: 10 dias úteis, só com OK explícito)
-É a continuação do Lote 3/4 do `totum-state.md`. Entra só depois da Fase 3, porque sem teste não dá pra refatorar com segurança.
+É a continuação do Lote 3/4 do `docs/history/totum-state.md`. Entra só depois da Fase 3, porque sem teste não dá pra refatorar com segurança.
 
 | # | Movimento | Risco |
 |---|---|---|
@@ -126,7 +126,7 @@ Objetivo: chegar nos thresholds do pipeline BuildOps de forma incremental, sem t
 |---|---|---|---|---|
 | Erros tsc | 8 | 0 | 0 | 0 |
 | Testes falhando | 5 | 0 | 0 | 0 |
-| Cobertura (lib/services/hooks) | desconhecida | medida | ≥ 80% | ≥ 80% |
+| Cobertura (lib/services/hooks) | 4,33% | medida ✅ | ≥ 80% | ≥ 80% |
 | E2E fluxos críticos | 0 | 0 | 5 | 5 |
 | Warnings lint | 509 | ≤ 509 (ratchet) | ≤ 400 | ≤ 150 |
 | CI em PR | não | sim, < 5 min | < 15 min com E2E | < 15 min |

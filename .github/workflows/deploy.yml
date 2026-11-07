@@ -6,7 +6,7 @@ name: CI + Deploy Edge Functions
 #   2. Deploy das edge functions alteradas para o Supabase Cloud
 # O antigo job deploy-vps (entrega do dist via SSH para a VPS) foi removido em
 # 2026-07-19: estava quebrado (timeout SSH) e obsoleto — a VPS não serve mais
-# o frontend (ver deploy/nginx.conf e totum-state.md).
+# o frontend (ver deploy/nginx.conf e docs/history/totum-state.md).
 
 on:
   push:
@@ -101,6 +101,9 @@ jobs:
 
       - name: Lint (0 errors exigidos; warnings do baseline tolerados)
         run: npm run lint
+
+      - name: Typecheck (tsc strict)
+        run: npm run typecheck
 
       - name: Testes (vitest)
         run: npm run test

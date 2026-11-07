@@ -18,8 +18,8 @@
 | `9557648` | `[fix-tags-schema-drift]` | `useTags` usa `tenant_id` via repo em vez de `client_id` |
 | `52a433d` | `[crm-B1]` | Dropdown de etapas agrupado por funil (`SelectGroup` + `SelectLabel`) |
 | `720e82e` | `[crm-B3]` | Faixa morta nas colunas do kanban — as 3 causas |
-| `8d21446` | `[crm-B4]` | Padrão "salvar → toast → fecha" + `docs/UI-PATTERNS.md` + `TODO-MODAL-PATTERN.md` |
-| `31bd4cd` | `[crm-C]` | `SPEC-LEAD-SLUG.md`: segmentos reservados + ponteiro pra migration |
+| `8d21446` | `[crm-B4]` | Padrão "salvar → toast → fecha" + `docs/UI-PATTERNS.md` + `docs/dev/TODO-MODAL-PATTERN.md` |
+| `31bd4cd` | `[crm-C]` | `docs/dev/SPEC-LEAD-SLUG.md`: segmentos reservados + ponteiro pra migration |
 | `7fff699` | `[refactor-lead-detail]` | Extração de `<LeadDetail leadId>` — **você mergeou via PR #92 durante o batch** |
 
 `main` em `2a25a46`.
@@ -224,10 +224,10 @@ Bloco C`. Ou seja: ela escreveu a própria versão dos mesmos três documentos d
 
 | Arquivo | Situação | O que fiz |
 |---|---|---|
-| `AUDITORIA-CRM-UI.md` | Existe em main, versão da outra sessão (136 linhas). A minha, que você aprovou, tem 346. | **Não sobrepus.** A minha continua fora do repo. |
-| `TAGS-BUG-DIAGNOSE.md` | Idem (108 vs 257 linhas) | **Não sobrepus.** |
-| `SPEC-LEAD-SLUG.md` | Idem (104 linhas), e boa | **Complementei** com a seção de segmentos reservados + ponteiro pra migration. Aditivo, não reescreve nada. |
-| `ApiSettingsModal.tsx` | Modificado por eles em `main` hoje | **Não toquei.** Era 1 dos 8 modais do item 5. Registrado como item 1 do `TODO-MODAL-PATTERN.md`. |
+| `docs/history/AUDITORIA-CRM-UI.md` | Existe em main, versão da outra sessão (136 linhas). A minha, que você aprovou, tem 346. | **Não sobrepus.** A minha continua fora do repo. |
+| `docs/history/TAGS-BUG-DIAGNOSE.md` | Idem (108 vs 257 linhas) | **Não sobrepus.** |
+| `docs/dev/SPEC-LEAD-SLUG.md` | Idem (104 linhas), e boa | **Complementei** com a seção de segmentos reservados + ponteiro pra migration. Aditivo, não reescreve nada. |
+| `ApiSettingsModal.tsx` | Modificado por eles em `main` hoje | **Não toquei.** Era 1 dos 8 modais do item 5. Registrado como item 1 do `docs/dev/TODO-MODAL-PATTERN.md`. |
 
 **Decisão que preciso que você tome:** as duas auditorias do Bloco A (a minha e a
 deles) coexistem como conteúdos diferentes com o mesmo nome de arquivo. A minha está
@@ -243,7 +243,7 @@ numa versão só, ou se prefere deixar como está.
    (o `vite build` não typecheca), mas significa que o `tsc` não serve hoje como
    portão de CI. Recomendo um lote dedicado.
 2. **`origin/main` avançou duas vezes durante o batch.** Primeira: 3 commits da
-   sessão paralela (`.mcp.json`, `SEGURANCA-MCP-SUPABASE.md`, `whatsapp-webhook`) —
+   sessão paralela (`.mcp.json`, `docs/dev/SEGURANCA-MCP-SUPABASE.md`, `whatsapp-webhook`) —
    zero sobreposição, rebasei e re-verifiquei. Segunda: você mergeou o PR #92
    (meu refactor) e o PR #91. Rebasei `feat/lead-detail-sheet` sobre o resultado.
    Em nenhuma houve conflito de conteúdo.
@@ -291,7 +291,7 @@ Nenhum blocker crítico. Nada de data loss, prod down ou credencial exposta.
 7. **Item 9 não implementado, conforme sua própria instrução condicional** (não há
    tabela global no schema → documentar). Ver "Precisa da sua decisão".
 
-8. **`AUDITORIA-CRM-UI.md` e `TAGS-BUG-DIAGNOSE.md` não entraram no repo.** Ver
+8. **`docs/history/AUDITORIA-CRM-UI.md` e `docs/history/TAGS-BUG-DIAGNOSE.md` não entraram no repo.** Ver
    "Colisão com a sessão paralela".
 
 ---

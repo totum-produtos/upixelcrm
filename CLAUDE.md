@@ -1,7 +1,7 @@
 # CLAUDE.md — uPixel CRM
 
-**Versão:** 3.0
-**Atualizado:** 2026-05-10
+**Versão:** 3.1
+**Atualizado:** 2026-11-07
 **Nível:** [ ] LP/Site  [ ] MVP  [ ] Teste  [x] Produção
 **Sistema:** Vibe Coding Totum v3.0
 
@@ -39,7 +39,7 @@
 | Diagramas | React Flow |
 | Drag & Drop | @dnd-kit |
 | Testes | Vitest + Playwright + Testing Library |
-| Deploy | Vercel (implied) |
+| Deploy | Vercel (frontend, preview por PR) + GitHub Actions (edge functions) |
 | Versionamento | GitHub |
 
 ---
@@ -68,8 +68,10 @@ npm run dev         # rodar em desenvolvimento (Vite)
 npm run build       # build de produção
 npm run build:dev   # build modo development
 npm run lint        # verificar lint (ESLint)
+npm run typecheck   # tsc strict (0 erros exigido no CI)
 npm run test        # rodar testes (Vitest)
 npm run test:watch  # rodar testes em watch mode
+npm run test:coverage # testes + cobertura (lib/services/hooks)
 npm run preview     # preview do build
 ```
 
@@ -132,20 +134,24 @@ Regra: **IA sugere. Humano aprova.**
 ## ESTADO ATUAL DO PROJETO
 
 **Fase atual:** Produção
-**Últimas mudanças:** Componentes UI em evolução, design system em construção
+**Últimas mudanças:** Adequação BuildOps (POP-014-B), ver `docs/dev/PLANO-ADEQUACAO-BUILDOPS.md`
+**Ficha do projeto:** `PROJECT_CARD.md`
+**Decisões:** `docs/decisions/` (ADR-UPX-001 a 006)
 **Próximas tarefas:** Ver TODO.md
 **Bugs conhecidos:** Ver BUGS.md
 
-### Saúde Técnica (Fase 0 — 2026-05-10)
+### Saúde Técnica (medida em 2026-11-07)
 
 | Verificação | Status | Detalhe |
 |---|---|---|
 | Build | ✅ OK | `npm run build` passa |
-| Lint | ⚠️ 428 warnings | 0 errors — principalmente `any` e `exhaustive-deps` |
-| TypeScript | ✅ OK | strict mode ativo |
+| Lint | ⚠️ 509 warnings | 0 erros (500 `no-explicit-any`, 8 `exhaustive-deps`) |
+| TypeScript | ✅ OK | `npm run typecheck` com 0 erros |
+| Testes | ✅ OK | 94/94 (`npm run test`) |
+| Cobertura | 🔴 4,33% | linhas em lib/services/hooks (`npm run test:coverage`) |
+| E2E | 🔴 nenhum | Playwright instalado, sem testes |
+| CI em PR | ✅ OK | `.github/workflows/pr-ci.yml` (lint, typecheck, testes, build) |
 | .env no .gitignore | ✅ OK | .env, .env.local, .env.migration protegidos |
-| Segredos expostos | ✅ OK | nenhum encontrado |
-| Dependências | ✅ OK | npm audit limpo |
 
 ---
 
@@ -153,7 +159,7 @@ Regra: **IA sugere. Humano aprova.**
 
 | Recurso | Link |
 |---|---|
-| Repositório | https://github.com/grupototum/upixelcrm |
+| Repositório | https://github.com/totum-produtos/upixelcrm |
 | Deploy | [URL produção — preencher] |
 | Supabase | [URL projeto Supabase — preencher] |
 | Design | [URL Figma ou N/A] |
@@ -208,7 +214,7 @@ Editar `/etc/hosts`:
 | Gerar testes | `skill-gerador-testes.md` |
 | Revisar segurança | `skill-review-segurança.md` |
 
-> Skills em: `VIBE CODING TOTUM SYSTEM/Skills para IAs/`
+> Skills vêm do plugin `totum-skills@totum-house` (repo totum-house/skills), habilitado em `.claude/settings.json`. Orquestração: `/totum-buildops-orchestrator`.
 
 ---
 
@@ -224,4 +230,4 @@ Editar `/etc/hosts`:
 
 ---
 
-*CLAUDE.md v3.0 — uPixel CRM — Sistema Vibe Coding Totum — 2026-05-10*
+*CLAUDE.md v3.1, uPixel CRM, Sistema Vibe Coding Totum, 2026-11-07*

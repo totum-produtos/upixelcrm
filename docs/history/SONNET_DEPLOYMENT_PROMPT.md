@@ -192,7 +192,7 @@ echo "✅ Deploy verification passed"
 
 ### **PHASE 6: Document & Monitor**
 
-**Update DEPLOYMENT_PLAN.md with actual findings:**
+**Update docs/history/DEPLOYMENT_PLAN.md with actual findings:**
 - Actual root cause of proxy timeout
 - Which fix was applied (network, container, nginx)
 - Current container CMD
@@ -229,7 +229,7 @@ After completion, provide:
 2. **Changes made:** List of modifications to docker-compose, nginx.conf, deploy scripts, etc.
 3. **Verification commands:** How to verify each part works
 4. **Monitoring setup:** Commands to monitor and alert on issues
-5. **Updated DEPLOYMENT_PLAN.md** with lessons learned
+5. **Updated docs/history/DEPLOYMENT_PLAN.md** with lessons learned
 
 ---
 

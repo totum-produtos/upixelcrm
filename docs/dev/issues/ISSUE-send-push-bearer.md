@@ -1,7 +1,7 @@
 # ISSUE — `send-push` provavelmente nunca envia notificação
 
 **Severidade:** 🔴 alta (funcionalidade quebrada em produção, silenciosamente)
-**Origem:** achado A-01 de `AUDITORIA-API-KEYS.md`, aberto separado por P1.1 do batch de 2026-08-21.
+**Origem:** achado A-01 de `docs/history/AUDITORIA-API-KEYS.md`, aberto separado por P1.1 do batch de 2026-08-21.
 
 ## Arquivos afetados
 

@@ -2,7 +2,7 @@
 
 **Severidade:** 🔴 alta (não é exploração ativa hoje, mas a superfície existe e um deploy
 descuidado a abre)
-**Origem:** achado A-02 de `AUDITORIA-API-KEYS.md`, aberto separado por P1.2 do batch de 2026-08-21.
+**Origem:** achado A-02 de `docs/history/AUDITORIA-API-KEYS.md`, aberto separado por P1.2 do batch de 2026-08-21.
 
 ## Endpoint exposto sem verificação
 
