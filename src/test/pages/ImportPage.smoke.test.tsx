@@ -115,6 +115,14 @@ describe("ImportPage (smoke, rede de segurança do refactor)", () => {
     expect(screen.getByText(/sem nome/)).toBeInTheDocument();
   });
 
+  it("abre o modal de campo personalizado a partir de uma coluna não mapeada", async () => {
+    const { container } = renderPage();
+    await goToMapping(container);
+    // "email" é mapeada automaticamente; nenhuma coluna sobra, então usa "Novo Campo"
+    fireEvent.click(screen.getByRole("button", { name: /novo campo/i }));
+    expect(await screen.findByText("Criar Campo Personalizado")).toBeInTheDocument();
+  });
+
   it("ignora telefone que já existe na base (dedup)", async () => {
     mockSupabase.respond("leads", { data: [{ phone: "+55 11 9 8765-4321" }], error: null });
     const { container } = renderPage();
