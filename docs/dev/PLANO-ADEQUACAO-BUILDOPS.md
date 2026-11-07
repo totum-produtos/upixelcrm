@@ -93,7 +93,7 @@ Objetivo: chegar nos thresholds do pipeline BuildOps de forma incremental, sem t
 | 3.1 | Threshold de cobertura no vitest = número medido na Fase 1 (não pode cair) | ratchet | Testador |
 | 3.2 | Testes unitários nos `services/` já criados (leads, users, integrations, inbox, broadcast, automations) | +cobertura nos repositórios | Testador (Sonnet) |
 | 3.3 | Playwright real: substituir config Lovable, criar `e2e/` com 5 fluxos críticos (login, signup+tenant, criar lead, mover no pipeline, enviar mensagem inbox) rodando contra o preview da Vercel | 100% fluxos críticos | Kimi Claw |
-| 3.4 | Subir threshold em degraus: 10% → 25% → 50% → 80% nos módulos (baseline medido: 4,33%) `lib/`, `services/`, `hooks/`. Pages ficam fora do threshold até o refactor da Fase 4 | 80% em lib/services/hooks | Testador |
+| 3.4 | Threshold em ratchet nos módulos sensíveis (`lib/`, `services/`, `hooks/`): só pode subir, nunca cair. Sem meta de 80% global (Forja v1.1) | não cai | Testador |
 | 3.5 | Semgrep com regras de padrões de IA (secrets, `any` em boundary, fetch sem tratamento de erro) como step de `static_analysis` | 0 críticos | Tech Lead |
 
 **Gate de saída:** pipeline BuildOps com `lint_format`, `static_analysis`, `unit_tests`, `integration_tests` (E2E no preview) e `human_approval` funcionando.
@@ -126,7 +126,7 @@ Objetivo: chegar nos thresholds do pipeline BuildOps de forma incremental, sem t
 |---|---|---|---|---|
 | Erros tsc | 8 | 0 | 0 | 0 |
 | Testes falhando | 5 | 0 | 0 | 0 |
-| Cobertura (lib/services/hooks) | 4,33% | medida ✅ | ≥ 80% | ≥ 80% |
+| Cobertura (lib/services/hooks) | 4,33% | medida ✅ | não cai (ratchet) | não cai (ratchet) |
 | E2E fluxos críticos | 0 | 0 | 5 | 5 |
 | Warnings lint | 509 | ≤ 509 (ratchet) | ≤ 400 | ≤ 150 |
 | CI em PR | não | sim, < 5 min | < 15 min com E2E | < 15 min |
@@ -154,3 +154,16 @@ Tempo total estimado: **19 dias úteis** em sequência. Fases 2 e 3 podem rodar 
 2. **Posso mexer em `.github/workflows/deploy.yml`?** O plano de camadas de julho marcou `.github/` como intocável. A Fase 1 precisa abrir uma exceção só pro job `ci`.
 3. **Onde ficam os POP-014 A-E e os ADRs D-XXX?** Não estão no `totum-house/skills`. Se existirem em outro lugar, eu alinho a numeração.
 4. **Board de tasks:** Linear via Composio, GitHub Issues ou Markdown?
+
+---
+
+## Revisão pela Forja v1.1 (2026-11-07)
+
+**Classificação:** POP-014-B Adequar, tamanho **G** (tocou auth/tenant em edge functions, infra de CI e estimativa acima de 5 dias). G nunca é rebaixado.
+
+O que muda neste plano:
+- Sai a meta de 80% de cobertura global e o canário de tráfego (a v1.1 manda não exigir). Fica o ratchet nos módulos sensíveis.
+- Gate de G em todo PR: build, lint, typecheck, secret scan, Semgrep (só achados novos bloqueiam), auditoria de dependências, Lighthouse em entrega web, rollback declarado, revisão humana.
+- Débito fora do escopo: anotar e avisar, não corrigir junto. Na noite de 2026-11-07 isso foi descumprido em três pontos (bug do Kanban no #128, fix do Dashboard dentro do #122, conserto do deploy de functions no #124); estão registrados em `docs/dev/HANDOFF-BUILDOPS-2026-11-07.md`.
+- Baseline retroativo em `docs/dev/BASELINE-FORJA.md`.
+- Isolamento por tenant: ADR-UPX-007 (RLS como fronteira, filtro explícito só em operações em massa e destrutivas).
