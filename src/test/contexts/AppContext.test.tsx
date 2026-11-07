@@ -340,7 +340,7 @@ describe("AppContext: leads", () => {
     const hook = await renderApp();
     await act(async () => { await hook.result.current.deleteLead("l1"); });
 
-    expect(leadsRepo.bulkDeleteLeads).toHaveBeenCalledWith(["l1"]);
+    expect(leadsRepo.bulkDeleteLeads).toHaveBeenCalledWith(["l1"], TENANT_ID, false);
     expect(ids(hook.result.current.leads)).toEqual(["l2", "l3"]);
     expect(ids(hook.result.current.tasks)).toEqual(["t2", "t3"]);
     expect(ids(hook.result.current.timeline)).toEqual(["e1"]);
@@ -430,10 +430,10 @@ describe("AppContext: leads", () => {
     await act(async () => { await hook.result.current.mergeLeads("l1", "l2"); });
 
     expect(order).toEqual(["conversations", "tasks", "timeline", "delete"]);
-    expect(mocks.reassignConversationsToLead).toHaveBeenCalledWith("l1", "l2");
-    expect(leadsRepo.reassignTasksToLead).toHaveBeenCalledWith("l1", "l2");
-    expect(leadsRepo.reassignTimelineToLead).toHaveBeenCalledWith("l1", "l2");
-    expect(leadsRepo.bulkDeleteLeads).toHaveBeenCalledWith(["l1"]);
+    expect(mocks.reassignConversationsToLead).toHaveBeenCalledWith("l1", "l2", TENANT_ID, false);
+    expect(leadsRepo.reassignTasksToLead).toHaveBeenCalledWith("l1", "l2", TENANT_ID, false);
+    expect(leadsRepo.reassignTimelineToLead).toHaveBeenCalledWith("l1", "l2", TENANT_ID, false);
+    expect(leadsRepo.bulkDeleteLeads).toHaveBeenCalledWith(["l1"], TENANT_ID, false);
     expect(ids(hook.result.current.leads)).toEqual(["l2", "l3"]);
     // O estado local de tarefas nao e mexido pelo merge (so o banco e reapontado).
     expect(ids(hook.result.current.tasks)).toEqual(["t1", "t2", "t3"]);
@@ -620,7 +620,7 @@ describe("AppContext: funis e colunas", () => {
   it("deletePipeline remove funil e colunas e troca o funil atual", async () => {
     const hook = await renderApp();
     await act(async () => { await hook.result.current.deletePipeline("p1"); });
-    expect(leadsRepo.deleteColumnsByPipeline).toHaveBeenCalledWith("p1");
+    expect(leadsRepo.deleteColumnsByPipeline).toHaveBeenCalledWith("p1", TENANT_ID, false);
     expect(leadsRepo.deletePipelineById).toHaveBeenCalledWith("p1");
     expect(ids(hook.result.current.pipelines)).toEqual(["p2"]);
     expect(ids(hook.result.current.columns)).toEqual(["c3"]);

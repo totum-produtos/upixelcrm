@@ -24,7 +24,7 @@ interface LeadsSliceDeps {
 export function useLeadsSlice({
   scope, columns, pipelines, addTimelineEvent, setTasks, executeAutomationsRef,
 }: LeadsSliceDeps) {
-  const { tenantId, userClientId, tenantIdForInsert } = scope;
+  const { tenantId, userClientId, tenantIdForInsert, isMasterView } = scope;
 
   const [leads, setLeads] = useState<Lead[]>([]);
   // Espelha `leads` sem entrar em dependências de useCallback: leads muda a
@@ -245,7 +245,9 @@ export function useLeadsSlice({
 
   const deleteLead = useCallback(async (id: string) => {
     try {
-      await leadsRepo.bulkDeleteLeads([id]);
+      const clientId = tenantId ?? userClientId;
+      if (!clientId) throw new Error("Tenant não identificado");
+      await leadsRepo.bulkDeleteLeads([id], clientId, isMasterView);
     } catch (error) {
       logger.error(error); toast.error("Erro ao excluir lead"); return;
     }
@@ -253,19 +255,21 @@ export function useLeadsSlice({
     setLeads((prev) => prev.filter((l) => l.id !== id));
     setTasks((prev) => prev.filter((t) => t.lead_id !== id));
     toast.success("Lead excluído");
-  }, [markLeadDirty, setTasks]);
+  }, [markLeadDirty, setTasks, tenantId, userClientId, isMasterView]);
 
   const mergeLeads = useCallback(async (sourceLeadId: string, targetLeadId: string) => {
     try {
+      const clientId = tenantId ?? userClientId;
+      if (!clientId) throw new Error("Tenant não identificado");
       // Erro em conversations aborta, como no original
-      await reassignConversationsToLead(sourceLeadId, targetLeadId);
+      await reassignConversationsToLead(sourceLeadId, targetLeadId, clientId, isMasterView);
 
       // Se tasks/timeline não forem reapontados, NÃO deleta o lead de origem:
       // antes o delete rodava mesmo assim e os dados sumiam por cascade.
-      await leadsRepo.reassignTasksToLead(sourceLeadId, targetLeadId);
-      await leadsRepo.reassignTimelineToLead(sourceLeadId, targetLeadId);
+      await leadsRepo.reassignTasksToLead(sourceLeadId, targetLeadId, clientId, isMasterView);
+      await leadsRepo.reassignTimelineToLead(sourceLeadId, targetLeadId, clientId, isMasterView);
 
-      await leadsRepo.bulkDeleteLeads([sourceLeadId]);
+      await leadsRepo.bulkDeleteLeads([sourceLeadId], clientId, isMasterView);
 
       markLeadDirty(sourceLeadId);
       setLeads((prev) => prev.filter((l) => l.id !== sourceLeadId));
@@ -274,7 +278,7 @@ export function useLeadsSlice({
       logger.error(err);
       toast.error(`Erro ao mesclar leads: ${(err as Error).message}`);
     }
-  }, [markLeadDirty]);
+  }, [markLeadDirty, tenantId, userClientId, isMasterView]);
 
   return {
     leads, setLeads,

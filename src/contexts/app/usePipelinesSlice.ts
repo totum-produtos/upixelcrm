@@ -8,7 +8,7 @@ import type { AppScope } from "@/contexts/app/types";
 
 /** Fatia de funis: pipelines, colunas, funil selecionado e CRUD correspondente. */
 export function usePipelinesSlice(scope: AppScope) {
-  const { tenantId, userClientId, tenantIdForInsert } = scope;
+  const { tenantId, userClientId, tenantIdForInsert, isMasterView } = scope;
   const [pipelines, setPipelines] = useState<Pipeline[]>([]);
   const [columns, setColumns] = useState<PipelineColumn[]>([]);
   const [currentPipelineId, setCurrentPipelineId] = useState<string>("");
@@ -55,7 +55,8 @@ export function usePipelinesSlice(scope: AppScope) {
   const deletePipeline = useCallback(async (id: string) => {
     // Delete columns first to be safe (cascade should handle this but let's be explicitly).
     // Erro só era logado no original, preservado
-    await leadsRepo.deleteColumnsByPipeline(id).catch((colError) => { logger.error(colError); });
+    // clientId vazio filtra tudo (fail-closed): o cascade do funil cobre as colunas.
+    await leadsRepo.deleteColumnsByPipeline(id, tenantId ?? userClientId ?? "", isMasterView).catch((colError) => { logger.error(colError); });
 
     try {
       await leadsRepo.deletePipelineById(id);
@@ -72,7 +73,7 @@ export function usePipelinesSlice(scope: AppScope) {
     });
     setColumns((prev) => prev.filter((c) => c.pipeline_id !== id));
     toast.success("Funil excluído com sucesso");
-  }, [currentPipelineId]);
+  }, [currentPipelineId, tenantId, userClientId, isMasterView]);
 
   const addColumn = useCallback(async (name: string, color: string) => {
     if (!currentPipelineId) { toast.error("Selecione um funil primeiro"); return; }

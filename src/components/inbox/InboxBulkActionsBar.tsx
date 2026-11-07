@@ -11,6 +11,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useSelection } from "@/contexts/SelectionContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTenantScope } from "@/hooks/useTenantScope";
 import { useConversationLabels } from "@/hooks/useConversationLabels";
 import { listActiveAgents } from "@/services/users";
 import { markConversationsRead, markConversationsUnread } from "@/services/inbox";
@@ -50,6 +51,7 @@ export function InboxBulkActionsBar({
   const { selectionMode, selectedIds, selectedCount, clearSelection, exitSelectionMode } = useSelection();
   const { user } = useAuth();
   const clientId = user?.client_id ?? "";
+  const { clientId: scopeClientId, masterView } = useTenantScope();
   const { labels } = useConversationLabels();
 
   const [busy, setBusy] = useState(false);
@@ -86,10 +88,10 @@ export function InboxBulkActionsBar({
   };
 
   const handleMarkRead = () =>
-    runBulk(`${leadIds.length} conversa(s) marcada(s) como lida(s).`, () => markConversationsRead(conversationIds));
+    runBulk(`${leadIds.length} conversa(s) marcada(s) como lida(s).`, () => markConversationsRead(conversationIds, scopeClientId, masterView));
 
   const handleMarkUnread = () =>
-    runBulk(`${leadIds.length} conversa(s) marcada(s) como não lida(s).`, () => markConversationsUnread(conversationIds));
+    runBulk(`${leadIds.length} conversa(s) marcada(s) como não lida(s).`, () => markConversationsUnread(conversationIds, scopeClientId, masterView));
 
   const handleResolve = () =>
     runBulk(`${leadIds.length} conversa(s) resolvida(s).`, () =>
