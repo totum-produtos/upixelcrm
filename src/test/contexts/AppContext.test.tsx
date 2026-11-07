@@ -796,3 +796,27 @@ describe("AppContext: refreshData", () => {
     expect(hook.result.current.leadCountByPipeline).toEqual({ p1: 1 });
   });
 });
+
+describe("AppContext: refresh concorrente com mutacao otimista", () => {
+  it("lead movido durante um refresh nao volta para a coluna antiga quando o snapshot chega", async () => {
+    const hook = await renderApp();
+
+    let releasePage: (rows: typeof LEADS) => void = () => {};
+    leadsRepo.listLeadsPage.mockImplementation(
+      () => new Promise((resolve) => { releasePage = resolve; }),
+    );
+
+    let refresh: Promise<void> = Promise.resolve();
+    act(() => { refresh = hook.result.current.refreshData(); });
+    await waitFor(() => expect(leadsRepo.listLeadsPage).toHaveBeenCalledTimes(2));
+
+    await act(async () => { await hook.result.current.moveLead("l1", "c2"); });
+    expect(leadOf(hook, "l1")?.column_id).toBe("c2");
+
+    // O snapshot do servidor ainda tem l1 em c1 (foi lido antes do move).
+    await act(async () => { releasePage(LEADS); await refresh; });
+
+    expect(leadOf(hook, "l1")?.column_id).toBe("c2");
+    expect(ids(hook.result.current.leads).sort()).toEqual(["l1", "l2", "l3"]);
+  });
+});
