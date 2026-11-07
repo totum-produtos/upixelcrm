@@ -17,11 +17,12 @@ import {
   Users, Building2, Shield, Mail, Search, Ban, CheckCircle2,
   PencilLine, Trash2, UserPlus, UserMinus, ChevronDown, ChevronUp, Loader2, FileText, Plus
 } from "lucide-react";
-
 import { UsersStats } from "@/components/users/UsersStats";
+import { UsersListTab } from "@/components/users/UsersListTab";
+import { OrgsTab } from "@/components/users/OrgsTab";
+import { useUsersListFilters } from "@/hooks/useUsersListFilters";
 import { PermissionMatrixTab } from "@/components/users/PermissionMatrixTab";
 import { AuditLogTab } from "@/components/users/AuditLogTab";
-import { roleBadge } from "@/components/users/constants";
 import type { ProfileRow, OrgRow, AuditLogRow } from "@/components/users/types";
 
 export default function UsersPage() {
@@ -31,7 +32,6 @@ export default function UsersPage() {
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [orgs, setOrgs] = useState<OrgRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
   const [auditLogs, setAuditLogs] = useState<AuditLogRow[]>([]);
   const [auditLoading, setAuditLoading] = useState(false);
   
@@ -40,8 +40,6 @@ export default function UsersPage() {
   const [editRole, setEditRole] = useState("");
   
   // Orgs specific
-  const [orgSearch, setOrgSearch] = useState("");
-  const [expandedOrg, setExpandedOrg] = useState<string | null>(null);
   const [addMemberModal, setAddMemberModal] = useState<OrgRow | null>(null);
   const [addMemberEmail, setAddMemberEmail] = useState("");
   const [addingMember, setAddingMember] = useState(false);
@@ -136,15 +134,12 @@ export default function UsersPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
   useEffect(() => { if (user) fetchAuditLogs(); }, [user, fetchAuditLogs]);
 
-  const filteredProfiles = profiles.filter(p =>
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    (p.email || "").toLowerCase().includes(search.toLowerCase())
-  );
+  const {
+    search, setSearch, filteredProfiles,
+    orgSearch, setOrgSearch, filteredOrgs,
+    expandedOrg, toggleExpandedOrg,
+  } = useUsersListFilters(profiles, orgs);
 
-  const filteredOrgs = orgs.filter(o =>
-    o.name.toLowerCase().includes(orgSearch.toLowerCase()) ||
-    o.slug.toLowerCase().includes(orgSearch.toLowerCase())
-  );
 
   const toggleBlock = async (profile: ProfileRow) => {
     if (!isMaster && user?.role !== "supervisor") {
@@ -374,168 +369,34 @@ export default function UsersPage() {
           </TabsList>
 
           <TabsContent value="users">
-            <div className="rounded-xl ghost-border bg-card">
-              <div className="flex items-center justify-between ghost-border border-b px-4 py-3">
-                <div>
-                  <h2 className="text-sm font-semibold text-foreground">Lista de Usuários</h2>
-                  <p className="text-xs text-muted-foreground">Visão geral dos colaboradores e suas permissões</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {isMaster && (
-                    <Button
-                      size="sm"
-                      className="gap-1 text-xs bg-green-600 hover:bg-green-700"
-                      onClick={() => setCreateUserModal(true)}
-                    >
-                      <Plus className="h-3 w-3" /> Novo Usuário
-                    </Button>
-                  )}
-                  <div className="relative w-64">
-                    <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                    <Input placeholder="Buscar usuário..." className="pl-8 h-9 text-xs" value={search} onChange={(e) => setSearch(e.target.value)} />
-                  </div>
-                </div>
-              </div>
-              
-              {loading ? (
-                <div className="p-8 text-center text-muted-foreground text-sm">Carregando...</div>
-              ) : (
-                <div className="divide-y divide-border">
-                  {filteredProfiles.map((p) => (
-                    <div key={p.id} className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between hover:bg-muted/30 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className={`flex h-10 w-10 items-center justify-center rounded-full text-xs font-semibold ${p.is_blocked ? "bg-destructive/15 text-destructive" : "bg-primary/15 text-primary"}`}>
-                          {p.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-foreground flex items-center gap-2">
-                            {p.name}
-                            {p.is_blocked && <Badge variant="destructive" className="text-[9px] px-1.5 py-0">Bloqueado</Badge>}
-                            {p.approval_status === "pending" && <Badge className="text-[9px] px-1.5 py-0 bg-yellow-500/15 text-yellow-600 border-yellow-500/30">Pendente</Badge>}
-                          </p>
-                          <p className="flex items-center gap-1 text-xs text-muted-foreground"><Mail className="h-3 w-3" /> {p.email || "—"}</p>
-                          {isMaster && p.org_name && <p className="flex items-center gap-1 text-[10px] text-muted-foreground"><Building2 className="h-2.5 w-2.5" /> {p.org_name}</p>}
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="outline" className={roleBadge(p.role)}><Shield className="mr-1 h-3 w-3" /> {p.role}</Badge>
-                        {(isMaster || user?.role === "supervisor") && (
-                            <>
-                                {isMaster && p.approval_status === "pending" && p.id !== user?.id && (
-                                  <Button variant="default" size="sm" className="gap-1 text-xs bg-green-600 hover:bg-green-700" onClick={() => approveUser(p)}>
-                                    <CheckCircle2 className="h-3 w-3" /> Aprovar
-                                  </Button>
-                                )}
-                                <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => { setEditModal(p); setEditRole(p.role || "vendedor"); }}>
-                                <PencilLine className="h-3 w-3" /> Mudar Permissão
-                                </Button>
-                                {p.id !== user?.id && (
-                                    <>
-                                        <Button variant={p.is_blocked ? "default" : "destructive"} size="sm" className="gap-1 text-xs" onClick={() => toggleBlock(p)}>
-                                        {p.is_blocked ? <CheckCircle2 className="h-3 w-3" /> : <Ban className="h-3 w-3" />}
-                                        {p.is_blocked ? "Desbloquear" : "Bloquear"}
-                                        </Button>
-                                        {isMaster && (
-                                          <Button variant="destructive" size="sm" className="gap-1 text-xs" onClick={() => deleteUser(p)}>
-                                            <Trash2 className="h-3 w-3" /> Deletar
-                                          </Button>
-                                        )}
-                                    </>
-                                )}
-                            </>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  {filteredProfiles.length === 0 && <p className="p-6 text-center text-sm text-muted-foreground">Nenhum usuário encontrado.</p>}
-                </div>
-              )}
-            </div>
+            <UsersListTab
+              loading={loading}
+              profiles={filteredProfiles}
+              search={search}
+              onSearchChange={setSearch}
+              isMaster={isMaster}
+              user={user}
+              onCreateUser={() => setCreateUserModal(true)}
+              onApprove={approveUser}
+              onEditRole={(p) => { setEditModal(p); setEditRole(p.role || "vendedor"); }}
+              onToggleBlock={toggleBlock}
+              onDelete={deleteUser}
+            />
           </TabsContent>
 
           {isMaster && (
             <TabsContent value="orgs">
-              <div className="rounded-xl ghost-border bg-card">
-                <div className="flex items-center justify-between ghost-border border-b px-4 py-3">
-                  <div>
-                    <h2 className="text-sm font-semibold text-foreground">Todas as empresas</h2>
-                    <p className="text-xs text-muted-foreground">Gerencie organizações e seus membros</p>
-                  </div>
-                  <div className="relative w-64">
-                    <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                    <Input placeholder="Buscar empresa..." className="pl-8 h-9 text-xs" value={orgSearch} onChange={(e) => setOrgSearch(e.target.value)} />
-                  </div>
-                </div>
-                {loading ? (
-                  <div className="p-8 text-center text-muted-foreground text-sm">Carregando...</div>
-                ) : (
-                  <div className="divide-y divide-border">
-                    {filteredOrgs.map((o) => (
-                      <div key={o.id} className="px-4 py-3">
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/15 text-accent-foreground">
-                              <Building2 className="h-4 w-4" />
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-foreground">{o.name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                Dono: {o.owner_name} · {o.member_count} membro{o.member_count !== 1 ? "s" : ""}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => setExpandedOrg(expandedOrg === o.id ? null : o.id)}>
-                              {expandedOrg === o.id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                              Membros
-                            </Button>
-                            <Button variant="outline" size="sm" className="gap-1 text-xs text-primary" onClick={() => { setAddMemberModal(o); setAddMemberEmail(""); }}>
-                              <UserPlus className="h-3 w-3" /> Adicionar
-                            </Button>
-                            <Button variant="destructive" size="sm" className="gap-1 text-xs" onClick={() => deleteOrg(o)}>
-                              <Trash2 className="h-3 w-3" /> Excluir
-                            </Button>
-                          </div>
-                        </div>
-
-                        {expandedOrg === o.id && (
-                          <div className="mt-3 ml-13 space-y-1.5 pl-4 border-l-2 border-border">
-                            {(o.members || []).length === 0 ? (
-                              <p className="text-xs text-muted-foreground py-2">Nenhum membro nesta empresa.</p>
-                            ) : (
-                              (o.members || []).map((m) => (
-                                <div key={m.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/30 transition-colors">
-                                  <div className="flex items-center gap-2">
-                                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold">
-                                      {m.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
-                                    </div>
-                                    <div>
-                                      <p className="text-xs font-medium text-foreground flex items-center gap-1.5">
-                                        {m.name}
-                                        {m.id === o.owner_id && <Badge variant="outline" className="text-[9px] px-1 py-0 border-[hsl(var(--border-strong))] text-primary">Dono</Badge>}
-                                      </p>
-                                      <p className="text-[10px] text-muted-foreground">{m.email}</p>
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <Badge variant="outline" className={`text-[10px] ${roleBadge(m.role)}`}>{m.role}</Badge>
-                                    {m.id !== o.owner_id && (
-                                      <Button variant="ghost" size="sm" className="h-7 gap-1 text-[10px] text-destructive hover:text-destructive" onClick={() => handleRemoveMember(m, o)}>
-                                        <UserMinus className="h-3 w-3" /> Remover
-                                      </Button>
-                                    )}
-                                  </div>
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                    {filteredOrgs.length === 0 && <p className="p-6 text-center text-sm text-muted-foreground">Nenhuma empresa encontrada.</p>}
-                  </div>
-                )}
-              </div>
+              <OrgsTab
+                loading={loading}
+                orgs={filteredOrgs}
+                orgSearch={orgSearch}
+                onOrgSearchChange={setOrgSearch}
+                expandedOrg={expandedOrg}
+                onToggleExpanded={toggleExpandedOrg}
+                onAddMember={(o) => { setAddMemberModal(o); setAddMemberEmail(""); }}
+                onDeleteOrg={deleteOrg}
+                onRemoveMember={handleRemoveMember}
+              />
             </TabsContent>
           )}
 
