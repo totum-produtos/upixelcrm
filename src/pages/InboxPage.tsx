@@ -1,7 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { X } from "lucide-react";
 import { MergeLeadsModal } from "@/components/crm/MergeLeadsModal";
 import { InboxBulkActionsBar } from "@/components/inbox/InboxBulkActionsBar";
 import { InboxMediaViewer } from "@/components/inbox/InboxMediaViewer";
@@ -22,6 +21,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useInbox } from "@/hooks/useInbox";
 import type { LeadConversation } from "@/hooks/useInbox";
 import { useCsatSender } from "@/hooks/useCsatSender";
+import { useLeadPanel } from "@/hooks/useLeadPanel";
 import { useInboxFilters } from "@/hooks/useInboxFilters";
 import { useMediaViewer } from "@/hooks/useMediaViewer";
 import { useNewConversationForm } from "@/hooks/useNewConversationForm";
@@ -30,7 +30,7 @@ import { useElementSize } from "@/hooks/use-element-size";
 import type { ShadowSdrConversationInput } from "@/types/shadow-sdr";
 
 // Wrapper externo só pra providar o SelectionContext, mesmo padrão do CRMPage
-// (src/pages/CRMPage.tsx) — escopo do provider restrito ao Inbox.
+// (src/pages/CRMPage.tsx), escopo do provider restrito ao Inbox.
 export default function InboxPage() {
   return (
     <SelectionProvider>
@@ -40,7 +40,6 @@ export default function InboxPage() {
 }
 
 function InboxPageInner() { // force HMR reset
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { tasks, toggleTaskStatus, moveLead, columns, leads, refreshData, updateLead, addTimelineEvent } = useAppState();
   const { user } = useAuth();
@@ -66,37 +65,19 @@ function InboxPageInner() { // force HMR reset
     searchQuery, setSearchQuery, channelFilter, setChannelFilter, unreadOnly, setUnreadOnly,
     inboxTab, setInboxTab, filteredConversations,
   } = useInboxFilters(inbox.conversations);
-  const [showSidebar, setShowSidebar] = useState<boolean>(() => {
-    if (typeof window === "undefined") return true;
-    const saved = window.localStorage.getItem("upixel.inbox.showSidebar");
-    return saved === null ? true : saved === "1";
-  });
-
-  // Persiste preferência do painel lateral para não voltar todo reload.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem("upixel.inbox.showSidebar", showSidebar ? "1" : "0");
-  }, [showSidebar]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
 
   // ── Responsividade ──
   const isMobile = useIsMobile();
   // No mobile o layout mostra uma coluna por vez: 'list' → 'chat'.
   const [mobileView, setMobileView] = useState<"list" | "chat">("list");
-  // Painel do lead no mobile abre como overlay sob demanda (não persiste como o desktop).
-  const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
   // Mede a largura real do header do chat para colapsar as ações ANTES de sobrepor
   // (o painel aberto num laptop espreme o chat, o que o viewport sozinho não detecta).
   const { ref: chatHeaderRef, width: chatHeaderWidth } = useElementSize<HTMLDivElement>();
   const compactActions = isMobile || (chatHeaderWidth > 0 && chatHeaderWidth < 560);
 
-  // Estado unificado de abertura do painel do lead (desktop persiste; mobile é overlay).
-  const panelOpen = isMobile ? mobilePanelOpen : showSidebar;
-  const setPanelOpen = (open: boolean) => {
-    if (isMobile) setMobilePanelOpen(open);
-    else setShowSidebar(open);
-  };
-  const togglePanel = () => setPanelOpen(!panelOpen);
+  // Estado de abertura do painel do lead (desktop persiste; mobile é overlay).
+  const { panelOpen, setPanelOpen, togglePanel } = useLeadPanel(isMobile);
 
   // New conversation modal
   const {
@@ -154,7 +135,7 @@ function InboxPageInner() { // force HMR reset
     if (hasConversation) {
       inbox.selectLead(leadIdParam);
     } else {
-      // Sem conversa pra esse lead — abre modal "Nova conversa" preenchido
+      // Sem conversa pra esse lead: abre modal "Nova conversa" preenchido
       setNewLeadId(leadIdParam);
       setNewPhone(phoneParam);
       setNewChannel("whatsapp");

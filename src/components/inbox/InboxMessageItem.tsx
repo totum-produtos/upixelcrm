@@ -141,7 +141,7 @@ export function InboxMessageItem({
                 className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-destructive hover:underline"
               >
                 <RefreshCw className="h-2.5 w-2.5" />
-                Não enviada — tentar de novo
+                {"Não enviada \u2014 tentar de novo"}
               </button>
             )}
           </div>
