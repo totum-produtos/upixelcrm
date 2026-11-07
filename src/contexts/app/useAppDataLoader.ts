@@ -172,10 +172,15 @@ export function useAppDataLoader({
           // Atualiza progressivamente: cada batch já aparece nos cards, sem
           // atropelar o que o usuário mexeu enquanto os batches chegavam.
           const mapped = all.map(mapLead);
-          setLeads((prev) => reconcileLeads(prev, mapped, dirtyLeadIds.current));
+          // Cópia do conjunto agora: o updater roda depois, e o finally abaixo
+          // limpa dirtyLeadIds antes disso. Sem a cópia, o último lote via o
+          // conjunto vazio e desfazia o que o usuário mexeu durante a carga.
+          const dirty = new Set(dirtyLeadIds.current);
+          setLeads((prev) => reconcileLeads(prev, mapped, dirty));
         }
       } else if (gen === leadsFetchGen.current) {
-        setLeads((prev) => reconcileLeads(prev, [], dirtyLeadIds.current));
+        const dirty = new Set(dirtyLeadIds.current);
+        setLeads((prev) => reconcileLeads(prev, [], dirty));
       }
     } catch (err) {
       logger.error("Error fetching data:", err);
