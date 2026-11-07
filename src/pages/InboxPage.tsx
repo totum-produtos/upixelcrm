@@ -1,14 +1,12 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
-import {
-  Search, Phone, PhoneMissed, MessageSquare, Plus, MessageCircle, Loader2, CheckCheck, X, List,
-  MessageSquareDot,
-} from "lucide-react";
+import { MessageSquare, Plus, X } from "lucide-react";
 import { MergeLeadsModal } from "@/components/crm/MergeLeadsModal";
-import { Checkbox } from "@/components/ui/checkbox";
 import { InboxBulkActionsBar } from "@/components/inbox/InboxBulkActionsBar";
 import { InboxMediaViewer } from "@/components/inbox/InboxMediaViewer";
+import { InboxConversationList } from "@/components/inbox/InboxConversationList";
+import { InboxConversationFilters } from "@/components/inbox/InboxConversationFilters";
 import { InboxMessageList } from "@/components/inbox/InboxMessageList";
 import { InboxChatHeader } from "@/components/inbox/InboxChatHeader";
 import { InboxLeadPanel } from "@/components/inbox/InboxLeadPanel";
@@ -16,20 +14,17 @@ import { InboxDeleteLeadDialog } from "@/components/inbox/InboxDeleteLeadDialog"
 import { InboxNewConversationDialog } from "@/components/inbox/InboxNewConversationDialog";
 import { SelectionProvider, useSelection } from "@/contexts/SelectionContext";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Badge } from "@/components/ui/badge";
 import { CreateTaskModal } from "@/components/crm/CreateTaskModal";
 import { AddTagModal } from "@/components/crm/AddTagModal";
 import { ReplyBox } from "@/components/inbox/ReplyBox";
-import { PriorityBadge } from "@/components/inbox/PriorityBadge";
-import { ConversationStatusBadge } from "@/components/inbox/ConversationStatusBadge";
-import { CHANNEL_COLORS, CHANNEL_LABELS, CHANNEL_ICONS, formatTime, initials } from "@/lib/inbox-ui";
+import { CHANNEL_LABELS } from "@/lib/inbox-ui";
 import { useAppState } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useInbox } from "@/hooks/useInbox";
+import type { LeadConversation } from "@/hooks/useInbox";
 import { useCsatSender } from "@/hooks/useCsatSender";
+import { useInboxFilters } from "@/hooks/useInboxFilters";
 import { useMediaViewer } from "@/hooks/useMediaViewer";
 import { useNewConversationForm } from "@/hooks/useNewConversationForm";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -69,10 +64,10 @@ function InboxPageInner() { // force HMR reset
   }, [selectionMode, exitSelectionMode]);
 
   
-  const [searchQuery, setSearchQuery] = useState("");
-  const [channelFilter, setChannelFilter] = useState<string>("all");
-  const [unreadOnly, setUnreadOnly] = useState(false);
-  const [inboxTab, setInboxTab] = useState<string>("abertas");
+  const {
+    searchQuery, setSearchQuery, channelFilter, setChannelFilter, unreadOnly, setUnreadOnly,
+    inboxTab, setInboxTab, filteredConversations,
+  } = useInboxFilters(inbox.conversations);
   const [sending, setSending] = useState(false);
   const [showSidebar, setShowSidebar] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
@@ -176,33 +171,12 @@ function InboxPageInner() { // force HMR reset
     setSearchParams(next, { replace: true });
   }, [searchParams, inbox.loading, inbox.conversations, inbox.selectLead, setSearchParams]);
 
-  const filteredConversations = useMemo(() => {
-    let result = inbox.conversations;
-    
-    // Status-based Tab Filtering (Chatwoot style)
-    if (inboxTab === "abertas") {
-      result = result.filter(t => t.status === "open");
-    } else if (inboxTab === "resolvidas") {
-      result = result.filter(t => t.status === "resolved");
-    } else if (inboxTab === "adiadas") {
-      result = result.filter(t => t.status === "snoozed");
-    }
-
-    if (channelFilter !== "all") {
-      result = result.filter(t => t.channels.includes(channelFilter));
-    }
-    if (unreadOnly) {
-      result = result.filter(t => t.unread_count > 0);
-    }
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(t =>
-        (t.lead_name || "").toLowerCase().includes(q) ||
-        (t.last_message || "").toLowerCase().includes(q)
-      );
-    }
-    return result;
-  }, [inbox.conversations, searchQuery, channelFilter, unreadOnly, inboxTab]);
+  const handleSelectConversation = (c: LeadConversation) => {
+    if (selectionMode) { toggleLead(c.lead_id); return; }
+    inbox.selectLead(c.lead_id);
+    setActiveConversationId(c.source_conversations[0]?.id || null);
+    setMobileView("chat");
+  };
 
   // Find lead data for selected conversation
   const selectedLead = useMemo(() => {
@@ -253,219 +227,35 @@ function InboxPageInner() { // force HMR reset
     <AppLayout title="Inbox" subtitle="Central de atendimento">
       <div className="flex h-[calc(100dvh-4rem)] animate-fade-in">
         {/* ─── Thread list ─── */}
-        <div className={`${isMobile ? (mobileView === "chat" ? "hidden" : "w-full") : "w-80 shrink-0"} ghost-border border-r flex flex-col`}>
-          <div className="p-3 ghost-border border-b space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex gap-1 p-1 bg-secondary/50 rounded-lg">
-                {[
-                  { key: "abertas", label: "Abertas" },
-                  { key: "resolvidas", label: "Resolvidas" },
-                  { key: "adiadas", label: "Adiadas" },
-                ].map(tab => (
-                  <button
-                    key={tab.key}
-                    onClick={() => setInboxTab(tab.key)}
-                    className={`px-3 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider transition-all ${
-                      inboxTab === tab.key
-                        ? "bg-background text-primary shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setNewConvOpen(true)}>
-                <Plus className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="pl-9 h-9 text-xs"
-                placeholder="Buscar conversas..."
-              />
-            </div>
-            <div className="flex gap-1.5">
-              {["all", "whatsapp", "whatsapp_official", "email", "instagram"].map(ch => {
-                const Icon = ch === "all" ? List : CHANNEL_ICONS[ch] || MessageCircle;
-                const label = ch === "all" ? "Todos" : CHANNEL_LABELS[ch];
-                return (
-                  <Tooltip key={ch}>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={() => setChannelFilter(ch)}
-                        aria-label={label}
-                        className={`h-7 w-7 flex items-center justify-center rounded-full transition-colors ${
-                          channelFilter === ch
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-secondary text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        <Icon className="h-3.5 w-3.5" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>{label}</TooltipContent>
-                  </Tooltip>
-                );
-              })}
-              <div className="w-px h-5 bg-border self-center mx-0.5" />
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => setUnreadOnly(v => !v)}
-                    aria-label="Somente não lidas"
-                    aria-pressed={unreadOnly}
-                    className={`h-7 w-7 flex items-center justify-center rounded-full transition-colors ${
-                      unreadOnly
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <MessageSquareDot className="h-3.5 w-3.5" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>Somente não lidas</TooltipContent>
-              </Tooltip>
-            </div>
-          </div>
-          {selectionMode && (
-            <div className="flex items-center justify-between px-3 py-1.5 bg-secondary/40 border-b border-[hsl(var(--border-strong))] text-[11px]">
-              <button
-                className="text-primary font-semibold hover:underline"
-                onClick={() => selectAll(filteredConversations.map((c) => c.lead_id))}
-              >
-                Selecionar {filteredConversations.length} visíveis
-              </button>
-              <button className="text-muted-foreground hover:text-foreground" onClick={exitSelectionMode}>
-                Cancelar
-              </button>
-            </div>
-          )}
-          <div className="flex-1 overflow-auto">
-            {inbox.loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-              </div>
-            ) : filteredConversations.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 px-4">
-                <MessageCircle className="h-8 w-8 text-muted-foreground/30 mb-2" />
-                <p className="text-xs text-muted-foreground text-center">Nenhuma conversa encontrada</p>
-                <Button size="sm" variant="outline" className="mt-3 text-xs" onClick={() => setNewConvOpen(true)}>
-                  <Plus className="h-3 w-3 mr-1" /> Nova conversa
-                </Button>
-              </div>
-            ) : (
-              filteredConversations.map(c => (
-                <div
-                  key={c.lead_id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => {
-                    if (selectionMode) { toggleLead(c.lead_id); return; }
-                    inbox.selectLead(c.lead_id);
-                    setActiveConversationId(c.source_conversations[0]?.id || null);
-                    setMobileView("chat");
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key !== "Enter" && e.key !== " ") return;
-                    e.preventDefault();
-                    if (selectionMode) { toggleLead(c.lead_id); return; }
-                    inbox.selectLead(c.lead_id);
-                    setActiveConversationId(c.source_conversations[0]?.id || null);
-                    setMobileView("chat");
-                  }}
-                  className={`group w-full flex items-start gap-3 p-3 text-left hover:bg-secondary transition-all duration-200 border-b border-[hsl(var(--border-strong))] relative cursor-pointer ${
-                    inbox.selectedLeadId === c.lead_id ? "bg-primary/5 shadow-[inset_3px_0_0_0_#9b87f5]" : ""
-                  }`}
-                >
-                  <div
-                    className={`shrink-0 self-center transition-opacity ${selectionMode || isSelected(c.lead_id) ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!selectionMode) enterSelectionMode();
-                      toggleLead(c.lead_id);
-                    }}
-                  >
-                    <Checkbox checked={isSelected(c.lead_id)} aria-label={`Selecionar conversa com ${c.lead_name}`} />
-                  </div>
-                  <div className="relative">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center text-xs font-semibold text-primary shadow-sm relative overflow-visible">
-                      {initials(c.lead_name || "?")}
-                      {/* Status indicator */}
-                      <div className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background shadow-sm ${c.unread_count > 0 ? "bg-success" : "bg-muted-foreground/40"}`} />
-                    </div>
-                    <div className="absolute -bottom-1 -left-1 flex -space-x-1">
-                      {c.channels.slice(0, 2).map((ch, idx) => {
-                        const Icon = CHANNEL_ICONS[ch] || MessageCircle;
-                        return (
-                          <div key={idx} className={`h-4 w-4 rounded-full border-2 border-background flex items-center justify-center ${CHANNEL_COLORS[ch] || "bg-muted shadow-sm"}`}>
-                            <Icon className="h-2 w-2 text-white" />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-center mb-0.5">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className={`text-[13px] font-bold truncate ${c.unread_count > 0 ? "text-foreground" : "text-foreground/80"}`}>{c.lead_name}</span>
-                        {c.category !== "lead" && (
-                          <Badge className={`text-[9px] px-1.5 py-0 h-3.5 border-none uppercase font-black ${c.category === "partner" ? "bg-blue-500/20 text-blue-600" : "bg-purple-500/20 text-purple-600"}`}>
-                            {c.category === "partner" ? "Parceiro" : "Colab."}
-                          </Badge>
-                        )}
-                      </div>
-                      <span className="text-[10px] text-muted-foreground shrink-0 font-medium">{formatTime(c.last_message_at)}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {c.last_message && c.unread_count === 0 && (
-                        <CheckCheck className="h-3 w-3 text-muted-foreground/40 shrink-0" />
-                      )}
-                      <p className={`text-[11px] truncate leading-tight ${c.unread_count > 0 ? "text-foreground font-bold" : "text-muted-foreground"}`}>
-                        {c.last_message || "Sem mensagens"}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1.5 mt-2">
-                      <ConversationStatusBadge status={c.status} />
-                      <PriorityBadge priority={c.priority} />
-                      {c.channels.map(ch => {
-                         const Icon = CHANNEL_ICONS[ch] || MessageCircle;
-                         return <Icon key={ch} className="h-2.5 w-2.5 text-muted-foreground/60" />;
-                      })}
-                    </div>
-                  </div>
-                  <div className="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity self-center shrink-0">
-                    <button
-                      title="Registrar tentativa de ligação"
-                      className="h-6 w-6 flex items-center justify-center rounded hover:bg-secondary"
-                      onClick={(e) => { e.stopPropagation(); openQuickLog(c.lead_id, "call_attempt"); }}
-                    >
-                      <PhoneMissed className="h-3.5 w-3.5 text-muted-foreground" />
-                    </button>
-                    <button
-                      title="Registrar ligação"
-                      className="h-6 w-6 flex items-center justify-center rounded hover:bg-secondary"
-                      onClick={(e) => { e.stopPropagation(); openQuickLog(c.lead_id, "call"); }}
-                    >
-                      <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-                    </button>
-                  </div>
-                  {c.unread_count > 0 && (
-                    <div className="flex flex-col items-end gap-2 self-center">
-                      <div className="h-5 min-w-[20px] rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center px-1.5 shadow-md animate-in zoom-in duration-300">
-                        {c.unread_count}
-                      </div>
-                      <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+        <InboxConversationList
+          isMobile={isMobile}
+          mobileView={mobileView}
+          conversations={filteredConversations}
+          loading={inbox.loading}
+          selectedLeadId={inbox.selectedLeadId}
+          selectionMode={selectionMode}
+          isSelected={isSelected}
+          toggleLead={toggleLead}
+          enterSelectionMode={enterSelectionMode}
+          exitSelectionMode={exitSelectionMode}
+          selectAll={selectAll}
+          onSelectConversation={handleSelectConversation}
+          onNewConversation={() => setNewConvOpen(true)}
+          onQuickLog={openQuickLog}
+          header={
+            <InboxConversationFilters
+              inboxTab={inboxTab}
+              onTabChange={setInboxTab}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              channelFilter={channelFilter}
+              onChannelFilterChange={setChannelFilter}
+              onUnreadOnlyChange={setUnreadOnly}
+              unreadOnly={unreadOnly}
+              onNewConversation={() => setNewConvOpen(true)}
+            />
+          }
+        />
 
         {/* ─── Chat area ─── */}
         <div className={`${isMobile ? (mobileView === "chat" ? "w-full" : "hidden") : "flex-1"} flex flex-col min-w-0 bg-background relative`}>
