@@ -2,46 +2,27 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
-  Search, Phone, PhoneMissed, MoreVertical,
-  MessageSquare, CheckSquare, Tag,
-  ArrowRight, Plus, User, Building, Globe, Mail,
-  MessageCircle, Loader2, ExternalLink, Lock, Tags,
-  Check, CheckCheck, Clock,
-  File, Download, Maximize2, Activity, X,
-  MapPin, UserSquare2, ChevronLeft, ChevronRight, PlayCircle, VideoOff, Shield,
-  Instagram, Merge, Trash2, AlertCircle,
-  PanelRightClose, PanelRightOpen, ArrowLeft, List, MessageSquareDot,
-  RefreshCw,
+  Search, Phone, PhoneMissed, MoreVertical, MessageSquare, CheckSquare, Tag, ArrowRight, Plus,
+  User, Building, Mail, MessageCircle, Loader2, ExternalLink, Lock, Tags, Check, CheckCheck, Clock,
+  File, Download, Maximize2, Activity, X, MapPin, UserSquare2, ChevronLeft, ChevronRight,
+  PlayCircle, VideoOff, Instagram, Merge, Trash2, AlertCircle, PanelRightClose, PanelRightOpen,
+  ArrowLeft, List, MessageSquareDot, RefreshCw,
 } from "lucide-react";
 import { MergeLeadsModal } from "@/components/crm/MergeLeadsModal";
 import { Checkbox } from "@/components/ui/checkbox";
 import { InboxBulkActionsBar } from "@/components/inbox/InboxBulkActionsBar";
 import { SelectionProvider, useSelection } from "@/contexts/SelectionContext";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Popover, PopoverContent, PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -57,6 +38,7 @@ import { ConversationStatusBadge } from "@/components/inbox/ConversationStatusBa
 import { ShadowSdrPanel } from "@/components/inbox/ShadowSdrPanel";
 import { LeadContactIcons } from "@/components/inbox/LeadContactIcons";
 import { formatFileSize } from "@/lib/utils";
+import { CHANNEL_COLORS, CHANNEL_LABELS, CHANNEL_ICONS, formatTime, initials } from "@/lib/inbox-ui";
 import { useAppState } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useInbox } from "@/hooks/useInbox";
@@ -64,30 +46,6 @@ import { useCsatSender } from "@/hooks/useCsatSender";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useElementSize } from "@/hooks/use-element-size";
 import type { ShadowSdrConversationInput } from "@/types/shadow-sdr";
-
-const channelColors: Record<string, string> = {
-  whatsapp: "bg-success",
-  whatsapp_official: "bg-emerald-600",
-  instagram: "bg-pink-500",
-  email: "bg-primary",
-  webchat: "bg-accent",
-};
-
-const channelLabels: Record<string, string> = {
-  whatsapp: "WhatsApp",
-  whatsapp_official: "WA Oficial",
-  instagram: "Instagram",
-  email: "E-mail",
-  webchat: "Webchat",
-};
-
-const channelIcons: Record<string, typeof MessageCircle> = {
-  whatsapp: MessageCircle,
-  whatsapp_official: Shield,
-  email: Mail,
-  instagram: Instagram,
-  webchat: Globe,
-};
 
 // Wrapper externo só pra providar o SelectionContext, mesmo padrão do CRMPage
 // (src/pages/CRMPage.tsx) — escopo do provider restrito ao Inbox.
@@ -251,19 +209,6 @@ function InboxPageInner() { // force HMR reset
     setSearchParams(next, { replace: true });
   }, [searchParams, inbox.loading, inbox.conversations, inbox.selectLead, setSearchParams]);
 
-  const formatTime = (dateStr: string | null) => {
-    if (!dateStr) return "";
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    
-    if (diff < 60000) return "agora";
-    if (diff < 3600000) return `há ${Math.floor(diff / 60000)}min`;
-    if (diff < 86400000) return `há ${Math.floor(diff / 3600000)}h`;
-    if (diff < 604800000) return `${Math.floor(diff / 86400000)}d atrás`;
-    return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
-  };
-
   const filteredConversations = useMemo(() => {
     let result = inbox.conversations;
     
@@ -291,9 +236,6 @@ function InboxPageInner() { // force HMR reset
     }
     return result;
   }, [inbox.conversations, searchQuery, channelFilter, unreadOnly, inboxTab]);
-
-  const initials = (name: string) =>
-    name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
 
   const handleCreateConversation = async () => {
     const lead = leads.find(l => l.id === newLeadId);
@@ -397,8 +339,8 @@ function InboxPageInner() { // force HMR reset
             </div>
             <div className="flex gap-1.5">
               {["all", "whatsapp", "whatsapp_official", "email", "instagram"].map(ch => {
-                const Icon = ch === "all" ? List : channelIcons[ch] || MessageCircle;
-                const label = ch === "all" ? "Todos" : channelLabels[ch];
+                const Icon = ch === "all" ? List : CHANNEL_ICONS[ch] || MessageCircle;
+                const label = ch === "all" ? "Todos" : CHANNEL_LABELS[ch];
                 return (
                   <Tooltip key={ch}>
                     <TooltipTrigger asChild>
@@ -506,9 +448,9 @@ function InboxPageInner() { // force HMR reset
                     </div>
                     <div className="absolute -bottom-1 -left-1 flex -space-x-1">
                       {c.channels.slice(0, 2).map((ch, idx) => {
-                        const Icon = channelIcons[ch] || MessageCircle;
+                        const Icon = CHANNEL_ICONS[ch] || MessageCircle;
                         return (
-                          <div key={idx} className={`h-4 w-4 rounded-full border-2 border-background flex items-center justify-center ${channelColors[ch] || "bg-muted shadow-sm"}`}>
+                          <div key={idx} className={`h-4 w-4 rounded-full border-2 border-background flex items-center justify-center ${CHANNEL_COLORS[ch] || "bg-muted shadow-sm"}`}>
                             <Icon className="h-2 w-2 text-white" />
                           </div>
                         );
@@ -539,7 +481,7 @@ function InboxPageInner() { // force HMR reset
                       <ConversationStatusBadge status={c.status} />
                       <PriorityBadge priority={c.priority} />
                       {c.channels.map(ch => {
-                         const Icon = channelIcons[ch] || MessageCircle;
+                         const Icon = CHANNEL_ICONS[ch] || MessageCircle;
                          return <Icon key={ch} className="h-2.5 w-2.5 text-muted-foreground/60" />;
                       })}
                     </div>
@@ -598,8 +540,8 @@ function InboxPageInner() { // force HMR reset
                     </div>
                     <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-background flex items-center justify-center overflow-hidden">
                       {(() => {
-                        const Icon = channelIcons[selectedLeadGroup.channels[0]] || MessageCircle;
-                        return <Icon className={`h-full w-full p-0.5 text-white ${channelColors[selectedLeadGroup.channels[0]]}`} />;
+                        const Icon = CHANNEL_ICONS[selectedLeadGroup.channels[0]] || MessageCircle;
+                        return <Icon className={`h-full w-full p-0.5 text-white ${CHANNEL_COLORS[selectedLeadGroup.channels[0]]}`} />;
                       })()}
                     </div>
                   </div>
@@ -619,7 +561,7 @@ function InboxPageInner() { // force HMR reset
                     </div>
                     <div className="flex items-center gap-1.5">
                       <p className="text-[10px] text-muted-foreground">
-                        {selectedLeadGroup.channels.map(ch => channelLabels[ch]).join(" & ")}
+                        {selectedLeadGroup.channels.map(ch => CHANNEL_LABELS[ch]).join(" & ")}
                       </p>
                       {leadColumn && (
                         <>
@@ -789,7 +731,7 @@ function InboxPageInner() { // force HMR reset
                         (new Date(nextMsg.created_at).getTime() - new Date(msg.created_at).getTime() < 60000) &&
                         nextMsg.is_private === msg.is_private;
 
-                      const ChannelIcon = channelIcons[msg.channel || ""] || MessageCircle;
+                      const ChannelIcon = CHANNEL_ICONS[msg.channel || ""] || MessageCircle;
                       
                       // Chat scope bubble styling
                       let borderRadius = "rounded-card";
@@ -815,13 +757,13 @@ function InboxPageInner() { // force HMR reset
                             </div>
                           )}
                           {showChannelChange && (() => {
-                            const ChIcon = channelIcons[currentChannel || ""] || MessageCircle;
-                            const label = channelLabels[currentChannel || ""] || currentChannel;
+                            const ChIcon = CHANNEL_ICONS[currentChannel || ""] || MessageCircle;
+                            const label = CHANNEL_LABELS[currentChannel || ""] || currentChannel;
                             return (
                               <div className="flex items-center gap-3 my-4">
                                 <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
                                 <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/5 border border-[hsl(var(--border-strong))]">
-                                  <ChIcon className={`h-3 w-3 ${channelColors[currentChannel || ""] ? "text-primary" : "text-muted-foreground"}`} />
+                                  <ChIcon className={`h-3 w-3 ${CHANNEL_COLORS[currentChannel || ""] ? "text-primary" : "text-muted-foreground"}`} />
                                   <span className="text-[9px] font-bold uppercase tracking-widest text-primary/70">
                                     Canal alterado para {label}
                                   </span>
@@ -1115,7 +1057,7 @@ function InboxPageInner() { // force HMR reset
                     );
                     if (newId) {
                       setActiveConversationId(newId);
-                      toast.success(`Canal ${channelLabels[channel] || channel} adicionado!`);
+                      toast.success(`Canal ${CHANNEL_LABELS[channel] || channel} adicionado!`);
                     }
                   }}
                 />
