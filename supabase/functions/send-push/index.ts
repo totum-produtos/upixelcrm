@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 import { corsHeaders } from "../_shared/cors.ts";
+import { isInternalServiceCall } from "./access.ts";
 
 interface PushPayload {
   title: string;
@@ -70,43 +71,53 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // ── Autenticação obrigatória: caller deve ser um user válido. ─────────────
+  // ── Autenticação obrigatória. ─────────────────────────────────────────────
+  // Dois chamadores válidos:
+  //   1. Interno (whatsapp-webhook, instagram-webhook) com a service role key:
+  //      confiável, sem tenant de origem (equivale a master).
+  //   2. Usuário logado: só dispara push para o próprio tenant.
   // Sem isso, qualquer um com a URL pode enviar push pra qualquer user/client.
   const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
+  const internalCall = isInternalServiceCall(authHeader, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"));
+  let callerClientId: string | null = null;
+  let isMaster = internalCall;
 
-  const userClient = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_ANON_KEY")!,
-    { global: { headers: { Authorization: authHeader } } },
-  );
-  const { data: { user: authUser }, error: authErr } = await userClient.auth.getUser();
-  if (authErr || !authUser) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
+  if (!internalCall) {
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-  // Profile do caller — define em qual tenant ele pode disparar push.
-  const { data: callerProfile } = await userClient
-    .from("profiles")
-    .select("client_id, role")
-    .eq("id", authUser.id)
-    .single();
-  if (!callerProfile) {
-    return new Response(JSON.stringify({ error: "Profile not found" }), {
-      status: 404,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    const userClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+    const { data: { user: authUser }, error: authErr } = await userClient.auth.getUser();
+    if (authErr || !authUser) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Profile do caller — define em qual tenant ele pode disparar push.
+    const { data: callerProfile } = await userClient
+      .from("profiles")
+      .select("client_id, role")
+      .eq("id", authUser.id)
+      .single();
+    if (!callerProfile) {
+      return new Response(JSON.stringify({ error: "Profile not found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    callerClientId = callerProfile.client_id;
+    isMaster = callerProfile.role === "master";
   }
-  const callerClientId = callerProfile.client_id;
-  const isMaster = callerProfile.role === "master";
 
   try {
     const body = await req.json() as PushPayload;
