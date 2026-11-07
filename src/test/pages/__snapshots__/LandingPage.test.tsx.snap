@@ -1,0 +1,182 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Landing pages > en: texto visível e links > hrefs 1`] = `
+[
+  "#features",
+  "#automations",
+  "#pricing",
+  "#faq",
+  "https://upixel.app",
+  "https://upixel.app",
+  "#features",
+  "https://upixel.app",
+  "https://upixel.app",
+  "https://upixel.app",
+  "https://upixel.app",
+  "https://upixel.app",
+]
+`;
+
+exports[`Landing pages > en: texto visível e links > texto 1`] = `
+"
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --z-black:#201515;
+  --z-cream:#fffefb;
+  --z-offwhite:#fffdf9;
+  --z-orange:#ff4f00;
+  --z-charcoal:#36342e;
+  --z-warm-gray:#939084;
+  --z-sand:#c5c0b1;
+  --z-light-sand:#eceae3;
+  --z-mid-warm:#b5b2aa;
+}
+body{background:var(--z-cream);color:var(--z-black);font-family:'Inter',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.5;overflow-x:hidden}
+h2{font-family:'Inter',Helvetica,Arial,sans-serif;font-size:clamp(1.8rem,3.5vw,2.25rem);font-weight:600;line-height:1.15;letter-spacing:-0.03em;color:var(--z-black)}
+h3{font-family:'Inter',Helvetica,Arial,sans-serif;font-size:1.25rem;font-weight:600;line-height:1.25;letter-spacing:-0.02em;color:var(--z-black)}
+h4{font-family:'Inter',Helvetica,Arial,sans-serif;font-size:1rem;font-weight:600;letter-spacing:-0.01em;color:var(--z-black)}
+p{color:var(--z-charcoal);line-height:1.6}
+a{color:var(--z-black);text-decoration:none}
+a:hover{text-decoration:underline}
+.label-tag{font-family:'Inter',Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--z-warm-gray);display:inline-block;margin-bottom:1rem}
+.btn-orange{background:var(--z-orange);color:#fff;border:1px solid var(--z-orange);padding:14px 28px;border-radius:4px;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:opacity .18s;display:inline-flex;align-items:center;gap:8px;text-decoration:none}
+.btn-orange:hover{opacity:.88;text-decoration:none}
+.btn-dark{background:var(--z-black);color:#fff;border:1px solid var(--z-black);padding:14px 24px;border-radius:8px;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:background .18s;display:inline-flex;align-items:center;gap:8px;text-decoration:none}
+.btn-dark:hover{background:var(--z-charcoal);text-decoration:none}
+.btn-ghost{background:transparent;color:var(--z-black);border:1px solid var(--z-sand);padding:14px 24px;border-radius:8px;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:background .18s,border-color .18s;display:inline-flex;align-items:center;gap:8px;text-decoration:none}
+.btn-ghost:hover{background:var(--z-light-sand);border-color:var(--z-mid-warm);text-decoration:none}
+.nav-wrap{position:sticky;top:0;z-index:100;background:var(--z-cream);border-bottom:1px solid var(--z-sand)}
+.nav{display:flex;align-items:center;justify-content:space-between;padding:16px 32px;max-width:1200px;margin:0 auto}
+.nav-logo{font-family:'Inter',Helvetica,Arial,sans-serif;font-size:1.3rem;font-weight:700;letter-spacing:-0.04em;color:var(--z-orange)}
+.nav-logo span{color:var(--z-black)}
+.nav-links{display:flex;gap:28px}
+.nav-links a{font-size:.9rem;font-weight:500;color:var(--z-black);transition:color .15s}
+.nav-links a:hover{color:var(--z-warm-gray);text-decoration:none}
+.btn-nav{background:var(--z-orange);color:#fff;border:none;padding:8px 20px;border-radius:4px;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:opacity .15s;text-decoration:none;display:inline-block}
+.btn-nav:hover{opacity:.88;text-decoration:none}
+.section{padding:80px 24px;max-width:1200px;margin:0 auto}
+.section-sm{padding:60px 24px;max-width:1200px;margin:0 auto}
+.section-header{text-align:center;margin-bottom:3.5rem}
+.section-header h2{margin-bottom:.75rem}
+.section-header p{color:var(--z-warm-gray);max-width:540px;margin:0 auto;font-size:.97rem}
+.divider{border:none;border-top:1px solid var(--z-sand)}
+.hero{padding:100px 24px 80px;text-align:center;background:var(--z-cream);border-bottom:1px solid var(--z-sand)}
+.hero-inner{max-width:860px;margin:0 auto}
+.hero h1{font-size:clamp(2.8rem,6vw,4.5rem);font-weight:600;line-height:0.95;letter-spacing:-0.04em;color:var(--z-black);margin-bottom:1.5rem}
+.hero h1 em{font-style:normal;color:var(--z-orange)}
+.hero p{font-size:1.2rem;color:var(--z-charcoal);max-width:580px;margin:0 auto 2.5rem;font-weight:400;line-height:1.5}
+.cta-row{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+.proof-row{margin-top:2.5rem;display:flex;align-items:center;justify-content:center;gap:28px;flex-wrap:wrap}
+.proof-item{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--z-warm-gray);font-weight:500}
+.proof-dot{width:5px;height:5px;border-radius:50%;background:var(--z-orange);flex-shrink:0}
+.stats-bar{background:var(--z-offwhite);border-bottom:1px solid var(--z-sand)}
+.stats-inner{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+.stat{padding:36px 32px;text-align:center;border-right:1px solid var(--z-sand)}
+.stat:last-child{border-right:none}
+.stat-n{font-size:2.6rem;font-weight:600;letter-spacing:-0.04em;color:var(--z-black);line-height:1;margin-bottom:6px}
+.stat-n em{color:var(--z-orange);font-style:normal}
+.stat-l{font-size:.83rem;color:var(--z-warm-gray);font-weight:500}
+.pain-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1px;background:var(--z-sand);border:1px solid var(--z-sand);border-radius:8px;overflow:hidden}
+.pain-card{background:var(--z-cream);padding:28px 24px}
+.pain-mark{width:24px;height:24px;border-radius:50%;background:var(--z-light-sand);border:1px solid var(--z-sand);color:var(--z-warm-gray);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-bottom:1rem}
+.pain-card h4{margin-bottom:.5rem;font-size:.97rem}
+.pain-card p{font-size:.875rem;color:var(--z-warm-gray);line-height:1.65}
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1px;background:var(--z-sand);border:1px solid var(--z-sand);border-radius:8px;overflow:hidden}
+.feat-card{background:var(--z-cream);padding:28px 24px;transition:background .15s}
+.feat-card:hover{background:var(--z-offwhite)}
+.feat-card.featured{background:var(--z-offwhite)}
+.feat-icon{width:40px;height:40px;border-radius:8px;border:1px solid var(--z-sand);background:var(--z-cream);display:flex;align-items:center;justify-content:center;margin-bottom:1rem;font-size:18px}
+.feat-card h3{font-size:.97rem;margin-bottom:.5rem}
+.feat-card p{font-size:.875rem;color:var(--z-warm-gray);line-height:1.65;margin-bottom:.75rem}
+.feat-card ul{list-style:none;padding:0}
+.feat-card ul li{font-size:.83rem;color:var(--z-charcoal);padding:4px 0 4px 1rem;position:relative;border-top:1px solid var(--z-light-sand)}
+.feat-card ul li::before{content:'→';position:absolute;left:0;color:var(--z-orange);font-size:.8rem}
+.auto-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1px;background:var(--z-sand);border:1px solid var(--z-sand);border-radius:8px;overflow:hidden}
+.auto-card{background:var(--z-cream);padding:22px 20px;transition:background .15s}
+.auto-card:hover{background:var(--z-offwhite)}
+.auto-label{font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--z-warm-gray);margin-bottom:.4rem}
+.auto-card h4{font-size:.93rem;margin-bottom:.4rem}
+.auto-card p{font-size:.83rem;color:var(--z-warm-gray);line-height:1.6}
+.steps-wrap{border:1px solid var(--z-sand);border-radius:8px;overflow:hidden;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));background:var(--z-sand)}
+.step{background:var(--z-cream);padding:32px 24px;text-align:center}
+.step-num{width:40px;height:40px;border-radius:50%;border:1px solid var(--z-sand);background:var(--z-cream);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:.87rem;font-weight:600;color:var(--z-orange)}
+.step h4{font-size:.92rem;margin-bottom:.35rem}
+.step p{font-size:.83rem;color:var(--z-warm-gray)}
+.integ-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.integ-badge{background:var(--z-cream);border:1px solid var(--z-sand);border-radius:5px;padding:10px 12px;text-align:center;font-size:.8rem;font-weight:500;color:var(--z-charcoal);transition:border-color .15s,background .15s}
+.integ-badge:hover{border-color:var(--z-mid-warm);background:var(--z-offwhite)}
+.compare-wrap{border:1px solid var(--z-sand);border-radius:8px;overflow:hidden}
+.compare-table{width:100%;border-collapse:collapse;font-size:.88rem}
+.compare-table th{padding:14px 16px;text-align:left;background:var(--z-offwhite);font-size:11px;font-weight:600;color:var(--z-warm-gray);letter-spacing:.07em;text-transform:uppercase;border-bottom:1px solid var(--z-sand)}
+.compare-table th:not(:first-child){text-align:center}
+.compare-table th.upixel{color:var(--z-orange)}
+.compare-table td{padding:12px 16px;border-bottom:1px solid var(--z-light-sand);color:var(--z-warm-gray)}
+.compare-table td.feat-name{color:var(--z-black);font-weight:500}
+.compare-table td:not(:first-child){text-align:center}
+.compare-table td.yes{color:var(--z-orange);font-weight:600}
+.compare-table td.no{color:var(--z-mid-warm)}
+.compare-table td.partial{color:var(--z-charcoal)}
+.compare-table tr:last-child td{border-bottom:none}
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:16px;align-items:start}
+.plan{background:var(--z-cream);border:1px solid var(--z-sand);border-radius:8px;padding:32px 28px}
+.plan.featured{border:2px solid var(--z-black)}
+.plan-popular-badge{display:inline-block;background:var(--z-black);color:var(--z-cream);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:4px 14px;border-radius:4px;margin-bottom:1rem}
+.plan-name{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--z-warm-gray);margin-bottom:.5rem}
+.plan-price{font-size:2.6rem;font-weight:600;letter-spacing:-0.04em;color:var(--z-black);margin-bottom:.25rem;line-height:1}
+.plan-price span{font-size:1rem;font-weight:400;color:var(--z-warm-gray)}
+.plan-desc{font-size:.87rem;color:var(--z-warm-gray);margin-bottom:1.5rem;padding-bottom:1.25rem;border-bottom:1px solid var(--z-sand)}
+.plan ul{list-style:none;padding:0;margin-bottom:2rem}
+.plan ul li{font-size:.875rem;padding:7px 0 7px 1.5rem;position:relative;border-bottom:1px solid var(--z-light-sand);color:var(--z-charcoal)}
+.plan ul li::before{content:'✓';position:absolute;left:0;color:var(--z-orange);font-size:.85rem;font-weight:600}
+.plan ul li.off{color:var(--z-mid-warm)}
+.plan ul li.off::before{content:'—';color:var(--z-light-sand)}
+.btn-plan{width:100%;padding:13px;border-radius:4px;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:14px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:opacity .15s;display:block;text-align:center;text-decoration:none}
+.btn-plan.default{background:var(--z-light-sand);color:var(--z-black);border-color:var(--z-sand)}
+.btn-plan.default:hover{background:var(--z-sand);text-decoration:none}
+.btn-plan.primary{background:var(--z-orange);color:#fff}
+.btn-plan.primary:hover{opacity:.88;text-decoration:none}
+.btn-plan.dark{background:var(--z-black);color:#fff}
+.btn-plan.dark:hover{background:var(--z-charcoal);text-decoration:none}
+.faq-list{display:flex;flex-direction:column;border:1px solid var(--z-sand);border-radius:8px;overflow:hidden}
+.faq-item{background:var(--z-cream);border-bottom:1px solid var(--z-sand);padding:20px 24px;cursor:pointer;transition:background .15s}
+.faq-item:last-child{border-bottom:none}
+.faq-item:hover{background:var(--z-offwhite)}
+.faq-q{font-size:.95rem;font-weight:500;color:var(--z-black);display:flex;justify-content:space-between;align-items:center;gap:16px}
+.faq-a{font-size:.87rem;color:var(--z-warm-gray);margin-top:12px;line-height:1.7}
+.faq-toggle{color:var(--z-orange);font-size:1.3rem;line-height:1;flex-shrink:0;transition:transform .18s;font-weight:300}
+.faq-toggle.open{transform:rotate(45deg)}
+.cta-block{background:var(--z-black);border-radius:8px;padding:64px 40px;text-align:center}
+.cta-block h2{color:var(--z-cream);font-size:clamp(1.8rem,3.5vw,2.5rem);margin-bottom:.75rem}
+.cta-block p{color:var(--z-sand);max-width:480px;margin:0 auto 2.5rem;font-weight:400}
+.cta-guarantee{margin-top:1.5rem;font-size:.82rem;color:var(--z-mid-warm)}
+.footer{background:var(--z-black);border-top:1px solid rgba(197,192,177,.15);padding:40px 24px;text-align:center}
+.footer-inner{max-width:1200px;margin:0 auto}
+.footer p{color:var(--z-sand);font-size:.84rem;margin-bottom:.5rem}
+.footer small{color:var(--z-warm-gray);font-size:.79rem}
+@media(max-width:768px){
+  .nav-links{display:none}
+  .hero{padding:60px 20px 50px}
+  .stats-inner{grid-template-columns:1fr 1fr}
+  .stat{border-right:none;border-bottom:1px solid var(--z-sand)}
+  .stat:nth-child(even){border-left:1px solid var(--z-sand)}
+  .stat:nth-last-child(-n+2){border-bottom:none}
+  .cta-block{padding:40px 20px}
+  .pricing-grid{grid-template-columns:1fr}
+  .compare-wrap{overflow-x:auto}
+}
+uPixelFeaturesAutomationsPricingFAQStart freeCRM + WhatsApp + AutomationsStop losing deals tobroken toolstacksuPixel is the all-in-one CRM with native WhatsApp, mass messaging, visual automations, and AI — everything in one platform. No developer. No fragile integrations.Start free 14-day trial →See how it worksNo credit card requiredSetup in minutesLGPD & GDPR compliantCancel anytime50+automation action types6channels in one inbox5×more leads converted0lines of code neededThe problemYou're leaving money on the table every dayWithout an integrated CRM, your team wastes time, energy, and potential customers.✗Conversations lost in WhatsAppLeads come through WhatsApp and disappear in personal chats. No history, no tracking, no funnel.✗Follow-up depends on memoryEvery rep has their own system — spreadsheet, notebook, or brain. Hot leads go cold because no one remembered.✗5 tools, 5 subscriptionsCRM here, WhatsApp blaster there, email marketing somewhere else. Fragmented data, high cost, manual integrations that break.✗Automations require a developerEvery workflow depends on a dev. Process changed? Open a ticket. Wait. Pay. Repeat next month.The solutionOne platform. Everything solved.From first contact to post-sale, uPixel centralizes your entire commercial operation.💬WhatsApp + Unified InboxWhatsApp (Evolution API & Meta Official), Instagram Direct, Gmail, Facebook Messenger, and Webchat — all in one inbox.Zero message loss with auto-dedupSmart round-robin assignmentReal-time status, internal notesMultiple WhatsApp instances per account📢Smart Mass MessagingSegmented campaigns with advanced filters, A/B testing, anti-ban throttling, and full performance tracking.Segment by tags, lead score, custom fieldsRandomized send intervalsAuto opt-out on "STOP" keywordROI calculated per campaign⚡Visual Automations — No CodeDrag-and-drop builder with 50+ action types. Build follow-up flows, cart recovery, upsell sequences — no developer needed.Event, time, and webhook triggersIF/ELSE logic, loops, and delaysDynamic CRM variablesDetailed execution logs🧠AI & Alexandria (RAG)Knowledge base with Retrieval-Augmented Generation. Answers with real company context, not generic chatbot responses.Real-time response suggestionsCustomer sentiment analysisDeal closing probability scoreAutomatic conversation summaries📊Full CRM + PipelineLead, contact, and opportunity management with visual pipeline, drag-and-drop stages, and full interaction history.Auto-deduplication by email/phoneActivity-based lead scoringAutomatic forecastingCustomizable fields per account📈Analytics & ReportsExecutive dashboard with real-time KPIs, activity heatmaps, cohort analysis, and CSV/Excel/PDF exports.Conversion rate by funnel stageRep performance rankingCampaign ROI metricsScheduled email reportsReady-to-use automationsWorkflows that run while you sleepPre-built automation templates. Just configure and activate.AcquisitionAutomatic lead follow-upLead created → WhatsApp 5 min → email 2h → SMS 1 day → mark "cold" if no replyRecoveryAbandoned cartWebhook → WhatsApp + coupon → 6h no purchase → email → 1 day → free shipping offerExpansionPost-close upsellDeal won → related products → email + WhatsApp → follow-up task in 7 daysRetentionAutomatic NPSSupport resolved → 2h → NPS via WhatsApp → score <7 escalates to managerRe-engagementCold lead (60 days silent)Auto trigger → "still interested?" → replied: active / silence: mark inactiveRelationshipBirthday offerDaily cron → detects birthdays → "Happy birthday + 15% off" + task for manager to callHow it worksLive in minutes, not weeks01Create your accountGuided setup. Nothing to install. 100% cloud.02Connect your channelsWhatsApp via QR Code, email, Instagram in a few clicks.03Import your leadsCSV, API, or migrate from Kommo automatically.04Activate automationsPick a ready template or build yours in the visual editor.IntegrationsWorks with your existing stackWhatsApp BusinessEvolution APIInstagram DMGmailFacebook MessengerZapierMakeGoogle CalendarGoogle SheetsStripeMercadoPagoHotmartKommoRD StationHubSpotSendGridAWS SESSupabaseComparisonWhy uPixel over the alternatives?FeatureuPixelKommoZendeskDIY stackNative, stable WhatsApp✓Partial——Mass messaging with anti-ban✓——ComplexNo-code automations✓LimitedLimited—Contextual RAG-based AI✓—Basic—Unified multi-channel (6)✓Some✓—SMB-friendly pricing✓$$$$$$Hidden costsGDPR/LGPD compliant✓PartialPartial—PricingSimple. No surprises.Scale as you grow. Cancel anytime.Starter$49 /moFor small teams getting startedUnified inbox (up to 2 channels)1 WhatsApp instance100 automations / monthFull CRM + PipelineBasic reportsMass messagingAI / AlexandriaPublic APIStart with StarterMost popularPro$149 /moFor active sales teamsAll channels, unlimitedMultiple WhatsApp instancesUnlimited mass messaging10,000 automations / monthAI + Alexandria (RAG)Public REST APIAdvanced reports + exportPriority supportActivate Pro →EnterpriseCustomFor large operations, agencies, white-labelEverything in ProFull white-labelGuaranteed SLADedicated supportAdvanced multi-tenantCustom developmentPersonalized onboardingAssisted migrationTalk to salesFAQFrequently asked questionsDoes uPixel work with a personal WhatsApp number?+Can I migrate from Kommo or another CRM?+Will WhatsApp ban my number for mass messaging?+Do I need a developer to use automations?+Is uPixel GDPR compliant?+How does the free trial work?+Start todayYour sales operation deservestools that actually work14-day free trial. No credit card. Setup in minutes.Create my free account →Book a demo✓ No commitment    ✓ Cancel anytime    ✓ GDPR & LGPD compliant© 2026 uPixel CRM — Sales technology for teams that take results seriously.Built with Supabase · TypeScript · React · Edge Functions"
+`;
+
+exports[`Landing pages > pt: texto visível e links > hrefs 1`] = `
+[
+  "/",
+  "#produto",
+  "#operacao",
+  "#planos",
+  "/login",
+  "/login",
+]
+`;
+
+exports[`Landing pages > pt: texto visível e links > texto 1`] = `"ProdutoOperaçãoPlanosEntrarVer demoCRM comercial para equipes que vendem por conversaAtendimento, funil e IA no mesmo painel.O uPixel organiza leads, conversas, metas e automações para a operação comercial vender com menos troca de contexto.Solicitar demonstraçãoAcessar minha empresa2.490leads migrados11usuários ativos24hoperação self-hostedPainel de hojeResumo operacional do workspaceao vivo348Novos leads64Conversas abertas22Tarefas pendentes8Metas ativasFunil de vendasR$ 181k previstoNovoQualificadoPropostaFechadoInbox comercialWhatsApp, Instagram, Facebook e tarefas do time em um fluxo único de atendimento.Funil de vendasLeads organizados por etapa, responsáveis, origem e próxima ação.Automação com IABots, cadências, respostas rápidas e contexto para acelerar follow-up.Metas e relatóriosDashboard, resumo de vendas, metas e indicadores para gestão diária.Do primeiro contato ao fechamento.A operação inteira fica rastreável: origem do lead, dono da conversa, status da proposta, tarefa pendente e resultado.1Conecta canais e fontes de lead.2Distribui conversas e tarefas para a equipe.3Mede resultado por funil, meta e vendedor.Implantação assistidaColoque o CRM para rodar com dados reais.Importamos leads, configuramos canais e treinamos a equipe no fluxo de atendimento.Setup do workspaceMigração de leadsTreinamento comercialSuporte de ativaçãoQuero implantaruPixel CRMSelf-hosted na infraestrutura Totum"`;
