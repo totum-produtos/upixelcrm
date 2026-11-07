@@ -72,6 +72,7 @@ npm run typecheck   # tsc strict (0 erros exigido no CI)
 npm run test        # rodar testes (Vitest)
 npm run test:watch  # rodar testes em watch mode
 npm run test:coverage # testes + cobertura (lib/services/hooks)
+npm run test:e2e    # E2E Playwright sem backend (local: E2E_CHROMIUM_PATH=/opt/pw-browsers/chromium)
 npm run preview     # preview do build
 ```
 
@@ -140,17 +141,17 @@ Regra: **IA sugere. Humano aprova.**
 **Próximas tarefas:** Ver TODO.md
 **Bugs conhecidos:** Ver BUGS.md
 
-### Saúde Técnica (medida em 2026-11-07)
+### Saúde Técnica (medida em 2026-11-07, fim da noite)
 
 | Verificação | Status | Detalhe |
 |---|---|---|
 | Build | ✅ OK | `npm run build` passa |
-| Lint | ⚠️ 509 warnings | 0 erros (500 `no-explicit-any`, 8 `exhaustive-deps`) |
+| Lint | ⚠️ 479 warnings | 0 erros (maioria `no-explicit-any`) |
 | TypeScript | ✅ OK | `npm run typecheck` com 0 erros |
-| Testes | ✅ OK | 94/94 (`npm run test`) |
-| Cobertura | 🔴 4,33% | linhas em lib/services/hooks (`npm run test:coverage`) |
-| E2E | 🔴 nenhum | Playwright instalado, sem testes |
-| CI em PR | ✅ OK | `.github/workflows/pr-ci.yml` (lint, typecheck, testes, build) |
+| Testes | ✅ OK | 611/611 (`npm run test`) |
+| Cobertura | 🟡 45% | linhas em lib/services/hooks, threshold impede queda (`npm run test:coverage`) |
+| E2E | ✅ 22 testes | sem backend (`npm run test:e2e`); telas logadas dependem de staging |
+| CI em PR | ✅ OK | `.github/workflows/pr-ci.yml` (lint, typecheck, testes, cobertura, build, E2E) |
 | .env no .gitignore | ✅ OK | .env, .env.local, .env.migration protegidos |
 
 ---
