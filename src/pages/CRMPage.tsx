@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { useAppState } from "@/contexts/AppContext";
+import { useAppState, useLeadsState } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTags } from "@/hooks/useTags";
 import { useCustomFields } from "@/hooks/useCustomFields";
@@ -139,7 +139,7 @@ function SelectionToggleButton({ visibleLeads }: { visibleLeads: Lead[] }) {
  */
 function DuplicatesButton() {
   const navigate = useNavigate();
-  const { leads } = useAppState();
+  const { leads } = useLeadsState();
   const { scan, totalDuplicates } = useDuplicateDetection();
 
   useEffect(() => { scan(); }, [scan, leads.length]);

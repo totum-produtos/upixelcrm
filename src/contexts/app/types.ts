@@ -59,6 +59,32 @@ export interface AppState {
   refreshData: () => Promise<void>;
 }
 
+// Recortes de AppState por dominio. Cada um vira o valor de um contexto proprio;
+// a uniao dos seis recompoe exatamente AppState (ver useAppState).
+
+export type PipelinesState = Pick<AppState,
+  | "pipelines" | "columns" | "currentPipelineId" | "setPipeline"
+  | "addPipeline" | "updatePipeline" | "deletePipeline"
+  | "addColumn" | "updateColumn" | "deleteColumn" | "reorderColumns">;
+
+export type LeadsState = Pick<AppState,
+  | "leads" | "leadCountByPipeline"
+  | "addLead" | "updateLead" | "deleteLead" | "moveLead" | "moveLeadToPipeline" | "mergeLeads">;
+
+export type TasksState = Pick<AppState,
+  | "tasks" | "addTask" | "updateTask" | "deleteTask"
+  | "toggleTaskStatus" | "completeTask" | "updateTaskResult">;
+
+export type AutomationsState = Pick<AppState,
+  | "automations" | "complexAutomations"
+  | "createAutomation" | "updateAutomationNodes" | "deleteAutomation" | "toggleComplexAutomation"
+  | "toggleBasicAutomation" | "deleteBasicAutomation" | "addBasicAutomation" | "updateBasicAutomation">;
+
+export type TimelineState = Pick<AppState, "timeline" | "addTimelineEvent">;
+
+/** Estado da carga de dados: flag de loading e recarga manual. */
+export type AppDataState = Pick<AppState, "loading" | "refreshData">;
+
 /**
  * Escopo de tenant/usuario compartilhado pelas fatias do provider.
  * Expoe so primitivos (e o objeto memoizado de insert) para que as dependencias

@@ -16,7 +16,7 @@ import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { listActiveAgents } from '@/services/users';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAppState } from '@/contexts/AppContext';
+import { usePipelinesState } from '@/contexts/AppContext';
 
 import { BotStartNode } from './nodes/BotStartNode';
 import { BotMessageNode } from './nodes/BotMessageNode';
@@ -91,7 +91,7 @@ function ConfigPanel({ nodeId, onDelete }: { nodeId: string | null; onDelete: ()
   const node = nodeId ? getNode(nodeId) : null;
 
   const { user } = useAuth();
-  const { columns } = useAppState();
+  const { columns } = usePipelinesState();
   const clientId = user?.client_id ?? '';
   const { data: agents = [] } = useQuery<{ id: string; name: string }[]>({
     queryKey: ['bot-config-agents', clientId],

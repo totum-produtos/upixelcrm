@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboardKpis } from "@/hooks/useDashboardKpis";
-import { useAppState } from "@/contexts/AppContext";
+import { useTasksState } from "@/contexts/AppContext";
 import { formatRelativeTime } from "@/lib/format-date";
 
 function formatNumber(value: number) {
@@ -16,7 +16,7 @@ function formatNumber(value: number) {
 
 export default function DashboardGeneralPage() {
   const { data, isLoading, error, refetch } = useDashboardKpis();
-  const { tasks } = useAppState();
+  const { tasks } = useTasksState();
 
   const stats = data?.stats;
   const pendingTasks = tasks.filter((task) => task.status !== "completed").slice(0, 5);

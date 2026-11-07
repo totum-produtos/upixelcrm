@@ -3,13 +3,13 @@ import { ArrowLeft, Save, Play, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AutomationCanvas } from "@/components/automations/canvas/AutomationCanvas";
 import { ReactFlowProvider, useReactFlow } from "reactflow";
-import { useAppState } from "@/contexts/AppContext";
+import { useAutomationsState } from "@/contexts/AppContext";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 function BuilderHeader({ id }: { id: string }) {
   const navigate = useNavigate();
-  const { complexAutomations, updateAutomationNodes, toggleComplexAutomation } = useAppState();
+  const { complexAutomations, updateAutomationNodes, toggleComplexAutomation } = useAutomationsState();
   const { getNodes, getEdges } = useReactFlow();
   const [isSaving, setIsSaving] = useState(false);
 

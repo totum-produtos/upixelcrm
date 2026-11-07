@@ -17,7 +17,7 @@ import {
   isKommoBot,
   type KommoBot,
 } from "@/lib/kommo-bot-converter";
-import { useAppState } from "@/contexts/AppContext";
+import { useAutomationsState } from "@/contexts/AppContext";
 import { useNavigate } from "react-router-dom";
 
 interface Props {
@@ -29,7 +29,7 @@ interface Props {
 
 export function BotImportExportModal({ open, onOpenChange, preselectAutomationId }: Props) {
   const navigate = useNavigate();
-  const { complexAutomations, createAutomation, updateAutomationNodes } = useAppState();
+  const { complexAutomations, createAutomation, updateAutomationNodes } = useAutomationsState();
 
   const [tab, setTab] = useState<"import" | "export">(preselectAutomationId ? "export" : "import");
   const [importedBot, setImportedBot] = useState<KommoBot | null>(null);

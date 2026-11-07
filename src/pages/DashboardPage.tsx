@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Progress } from "@/components/ui/progress";
 import { LeadsByPeriodChart, LeadsByOriginChart } from "@/components/dashboard/DashboardCharts";
 import { formatRelativeTime, formatShortDate } from "@/lib/format-date";
-import { useAppState } from "@/contexts/AppContext";
+import { useTasksState } from "@/contexts/AppContext";
 import { CompleteTaskDialog } from "@/components/crm/CompleteTaskDialog";
 import type { Task } from "@/types";
 
@@ -26,7 +26,7 @@ const typeColors: Record<string, string> = {
 
 export default function DashboardPage() {
   const { data, isLoading, error, refetch } = useDashboardKpis();
-  const { tasks, completeTask } = useAppState();
+  const { tasks, completeTask } = useTasksState();
   const [completingTask, setCompletingTask] = useState<Task | null>(null);
 
   const stats = data?.stats;

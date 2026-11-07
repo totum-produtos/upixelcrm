@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { listActiveAgents } from "@/services/users";
 import { METRIC_LABELS, PERIOD_LABELS } from "@/lib/goal-period";
-import { useAppState } from "@/contexts/AppContext";
+import { usePipelinesState } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Goal, GoalMetric, GoalPeriod } from "@/types";
 
@@ -34,7 +34,7 @@ export function GoalFormDialog({
   goal: Goal | null;
   onSubmit: (values: GoalFormValues) => Promise<void>;
 }) {
-  const { columns } = useAppState();
+  const { columns } = usePipelinesState();
   const { user } = useAuth();
   const { data: agents = [] } = useQuery({
     queryKey: ["goals-form-agents", user?.client_id],

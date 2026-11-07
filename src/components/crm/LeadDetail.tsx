@@ -2,7 +2,7 @@ import { logger } from "@/lib/logger";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { useAppState } from "@/contexts/AppContext";
+import { useAppState, useLeadsState } from "@/contexts/AppContext";
 import * as leadsRepo from "@/services/leads";
 import { mockThreads, mockMessages } from "@/lib/mock-data";
 import { AddTagModal } from "@/components/crm/AddTagModal";
@@ -1052,7 +1052,7 @@ export function LeadDetail({ leadId, onClose }: LeadDetailProps) {
  */
 export function LeadDetailActions({ leadId, onClose }: LeadDetailProps) {
   const navigate = useNavigate();
-  const { leads, deleteLead, mergeLeads } = useAppState();
+  const { leads, deleteLead, mergeLeads } = useLeadsState();
   const { hasPermission } = usePermissions();
   const [showMergeModal, setShowMergeModal] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);

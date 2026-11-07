@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Merge, AlertTriangle } from "lucide-react";
-import { useAppState } from "@/contexts/AppContext";
+import { useLeadsState } from "@/contexts/AppContext";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
@@ -17,7 +17,7 @@ interface MergeLeadsModalProps {
 }
 
 export function MergeLeadsModal({ open, onOpenChange, sourceLead, onMerge }: MergeLeadsModalProps) {
-  const { leads } = useAppState();
+  const { leads } = useLeadsState();
   const [search, setSearch] = useState("");
   const [targetId, setTargetId] = useState("");
   const [loading, setLoading] = useState(false);
