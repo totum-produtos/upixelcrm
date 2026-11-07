@@ -8,13 +8,14 @@ const deleteLead = vi.fn(async () => {});
 
 vi.mock("@/integrations/supabase/client", () => ({ supabase: mockSupabase.client }));
 
-vi.mock("@/contexts/AppContext", () => ({
-  useAppState: () => ({
+vi.mock("@/contexts/AppContext", () => {
+  const state = () => ({
     leads: [{ id: "lead-1", name: "Maria" }],
     deleteLead,
     mergeLeads: vi.fn(),
-  }),
-}));
+  });
+  return { useAppState: state, useLeadsState: state };
+});
 vi.mock("@/hooks/usePermissions", () => ({
   usePermissions: () => ({ hasPermission: () => true }),
 }));
