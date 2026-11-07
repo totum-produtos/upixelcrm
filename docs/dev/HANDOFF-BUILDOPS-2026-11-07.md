@@ -44,6 +44,18 @@ A CLI do Supabase usada no CI (`version: latest`) passou a exigir `--yes` quando
 
 ---
 
+### Rollback por PR (Forja v1.1, gate G)
+Nenhum PR desta noite tem migration nem mudança de schema, RLS ou dado. Reverter = botão "Revert" do PR no GitHub, que abre um PR de reversão; o merge dele refaz o deploy da Vercel em cerca de 1 min.
+
+| PR | Como reverter | Cuidado extra |
+|---|---|---|
+| #122 | Revert do PR | Volta o bug visual do Dashboard |
+| #123 | Revert do PR + `workflow_dispatch` do deploy.yml com `functions: send-push whatsapp-status-probe` | Reabre SEC-1 e SEC-2. O push e o merge não redeployam functions sozinhos se só `.github` mudar |
+| #124 | Revert do PR | Reverter tira o `--yes` e o deploy de functions volta a falhar em silêncio. Não reverta esta parte |
+| #125, #126, #129, #130 | Revert do PR | Só frontend. Reverta na ordem inversa (#130, #129, #126, #125), porque os seguintes usam os hooks do #125 |
+| #127 | Revert do PR | Só testes e CI |
+| #128 | Revert do PR | Volta o bug do Kanban |
+
 ## 3. O que você precisa conferir de manhã (5 a 10 min)
 
 1. **Dashboard:** o card de pipeline mostra o nome das etapas.
@@ -73,6 +85,8 @@ Se algo quebrar, cada PR é reversível sozinho pelo botão "Revert" do GitHub, 
 ---
 
 ## 5. Erros meus durante a noite (transparência)
+
+- **Corrigi débito fora do escopo sem avisar antes** (regra da Forja v1.1 que entrou depois): bug do Kanban (#128), fix do Dashboard junto com o tsc (#122) e o deploy de functions (#124). Todos com teste e já em produção, mas a regra pede parar e avisar.
 
 - Um commit do #125 saiu sem a correção de um import de teste. O gate pegou, eu corrigi no commit seguinte, e nada foi para produção quebrado. Desde então valido sempre numa cópia limpa do repo antes do push.
 - O deploy do #123 não aconteceu na primeira tentativa (o problema da CLI descrito acima). Descobri pela checagem que eu tinha agendado, não por alerta.
