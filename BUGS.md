@@ -15,7 +15,7 @@
 | ABERTO | 5 | 3 | 8 |
 | NÃO VERIFICADO | 0 | 7 | 7 |
 
-Itens adicionais de segurança (SEC-x, vindos de ISSUE-*.md, AUDITORIA-API-KEYS.md e PROGRESSO-UPIXEL.md) estão na seção própria abaixo e não entram na contagem acima.
+Itens adicionais de segurança (SEC-x, vindos de ISSUE-*.md, docs/history/AUDITORIA-API-KEYS.md e docs/history/PROGRESSO-UPIXEL.md) estão na seção própria abaixo e não entram na contagem acima.
 
 Legenda de severidade original: 🔴 crítico, 🟡 médio, 🟢 leve.
 
@@ -27,13 +27,13 @@ Legenda de severidade original: 🔴 crítico, 🟡 médio, 🟢 leve.
 
 | ID | Status | Situação atual | Evidência |
 |---|---|---|---|
-| SEC-1 (A-01) | ABERTO 🔴 | `send-push` valida o chamador com `auth.getUser()`, mas `whatsapp-webhook` e `instagram-webhook` chamam com a service role key. Push de mensagem nova provavelmente nunca é enviado, sem log. | `supabase/functions/send-push/index.ts:75-92`; `ISSUE-send-push-bearer.md` |
-| SEC-2 (A-02) | ABERTO 🔴 | `whatsapp-status-probe` usa service role e consulta `integrations` por `integration_id` sem checar se o chamador pertence ao tenant. Qualquer JWT válido de qualquer tenant que conheça o UUID lê status. | `supabase/functions/whatsapp-status-probe/index.ts:19-48`; `ISSUE-whatsapp-status-probe-auth.md` |
+| SEC-1 (A-01) | ABERTO 🔴 | `send-push` valida o chamador com `auth.getUser()`, mas `whatsapp-webhook` e `instagram-webhook` chamam com a service role key. Push de mensagem nova provavelmente nunca é enviado, sem log. | `supabase/functions/send-push/index.ts:75-92`; `docs/dev/issues/ISSUE-send-push-bearer.md` |
+| SEC-2 (A-02) | ABERTO 🔴 | `whatsapp-status-probe` usa service role e consulta `integrations` por `integration_id` sem checar se o chamador pertence ao tenant. Qualquer JWT válido de qualquer tenant que conheça o UUID lê status. | `supabase/functions/whatsapp-status-probe/index.ts:19-48`; `docs/dev/issues/ISSUE-whatsapp-status-probe-auth.md` |
 | SEC-3 (PC-028) | ABERTO 🟡 | CORS cai em `*` quando `ALLOWED_ORIGINS` não está setada. Se a variável está setada em produção: NÃO VERIFICADO (painel Supabase). | `supabase/functions/_shared/cors.ts:2` |
 | SEC-4 (PC-037) | NÃO VERIFICADO | Fallback que varre todas as integrações pelo `webhook_verify_token` ainda existe no código. Depende de confirmar se todo tenant tem `integration_id` na URL cadastrada na Meta. | `supabase/functions/facebook-messenger-webhook/index.ts:30-46` |
 | SEC-5 (PC-038 d/e) | PARCIAL | Migration de RLS tenant-scoped e bucket privado existe no repositório. Se foi aplicada em produção: NÃO VERIFICADO. Backfill de mídia (b) depende de dry-run manual. | `supabase/migrations/20260810150000_pc038_storage_policies.sql` |
-| SEC-6 (PC-039) | NÃO VERIFICADO | Roles divergentes entre fontes e `profiles.role` sem CHECK. Exige `SELECT DISTINCT role FROM profiles` em produção. | `PROGRESSO-UPIXEL.md` (tabela de bloqueados) |
-| SEC-7 (PC-040) | PARCIAL | Reconciliação das migrations órfãs feita em documento, mas o CI só tem `apply-sdr-migration.yml` (migration fixa), sem aplicação geral de migrations. | `.github/workflows/`, `PC-040-RECONCILIACAO.md` |
+| SEC-6 (PC-039) | NÃO VERIFICADO | Roles divergentes entre fontes e `profiles.role` sem CHECK. Exige `SELECT DISTINCT role FROM profiles` em produção. | `docs/history/PROGRESSO-UPIXEL.md` (tabela de bloqueados) |
+| SEC-7 (PC-040) | PARCIAL | Reconciliação das migrations órfãs feita em documento, mas o CI só tem `apply-sdr-migration.yml` (migration fixa), sem aplicação geral de migrations. | `.github/workflows/`, `docs/history/PC-040-RECONCILIACAO.md` |
 | SEC-8 | NÃO VERIFICADO | Série de correções `fix/cb-01..cb-10` está no histórico (cb-01, 02, 03, 04, 05, 06, 08, 09, 10). Não há commit nem referência a `cb-07` no repositório: confirmar se o item foi descartado ou se falta. | `git log` (1c43f8d, 40ae9b2, 1a8f268, 1ee18e6, 5ed1605, 0c84224, dee81b0, 9842ce3, ff0fa6c) |
 
 ### 🔴 Críticos e parciais da auditoria

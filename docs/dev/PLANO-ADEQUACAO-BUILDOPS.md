@@ -47,7 +47,7 @@
 | ADR-UPX-001 | Stack canônica: React 18 + Vite + TS strict + Supabase + Vercel. Edge functions deployadas por Actions. | Sim, só formalizar |
 | ADR-UPX-002 | Multi-tenant por subdomínio com RLS por `tenant_id`. Toda mudança em RLS/Auth/Storage exige aprovação do Rael. | Sim (CLAUDE.md No-Fly Zones) |
 | ADR-UPX-003 | Credenciais nunca no repo nem no bundle. Vault é do Sentinela. | Sim (D-007 Totum) |
-| ADR-UPX-004 | Camadas: `services/` (repositório por domínio) → `hooks/` → `pages/`. Pages não chamam Supabase direto. | Parcial (Lotes 1-2 do `totum-state.md`) |
+| ADR-UPX-004 | Camadas: `services/` (repositório por domínio) → `hooks/` → `pages/`. Pages não chamam Supabase direto. | Parcial (Lotes 1-2 do `docs/history/totum-state.md`) |
 | ADR-UPX-005 | Quality Gate obrigatório em PR: lint 0 erros, tsc 0 erros, testes 100% verdes, cobertura ≥ meta da fase. | **Não**, é o que este plano instala |
 | ADR-UPX-006 | Preview Vercel por PR = ambiente canário. Smoke E2E roda contra o preview antes do merge. | Não |
 
@@ -55,7 +55,7 @@
 
 ## 3. Plano faseado (POP-014-B)
 
-Regra do `totum-state.md` continua valendo: **1 movimento = 1 commit = 1 PR pequeno**, build + lint + teste após cada um, quebrou reverte.
+Regra do `docs/history/totum-state.md` continua valendo: **1 movimento = 1 commit = 1 PR pequeno**, build + lint + teste após cada um, quebrou reverte.
 
 ### Fase 1: Estancar a sangria (SLA: 2 dias úteis)
 Objetivo: `main` verde e gate funcionando em PR. Nada de refactor aqui.
@@ -99,7 +99,7 @@ Objetivo: chegar nos thresholds do pipeline BuildOps de forma incremental, sem t
 **Gate de saída:** pipeline BuildOps com `lint_format`, `static_analysis`, `unit_tests`, `integration_tests` (E2E no preview) e `human_approval` funcionando.
 
 ### Fase 4: Débito arquitetural (SLA: 10 dias úteis, só com OK explícito)
-É a continuação do Lote 3/4 do `totum-state.md`. Entra só depois da Fase 3, porque sem teste não dá pra refatorar com segurança.
+É a continuação do Lote 3/4 do `docs/history/totum-state.md`. Entra só depois da Fase 3, porque sem teste não dá pra refatorar com segurança.
 
 | # | Movimento | Risco |
 |---|---|---|

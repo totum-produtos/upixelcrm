@@ -9,7 +9,7 @@
 
 ## Motivação
 
-O erro "Erro ao criar chave de API." (diagnosticado em `AUDITORIA-API-KEYS.md`) é sintoma de um
+O erro "Erro ao criar chave de API." (diagnosticado em `docs/history/AUDITORIA-API-KEYS.md`) é sintoma de um
 problema estrutural: o sistema não tem observabilidade de erros para o usuário final. `src/lib/logger.ts`
 já grava em `public.error_logs` em produção, mas (a) só grava a coluna `message`, sem contexto,
 (b) ninguém lê — não existe UI. Esta spec fecha esse ciclo.
@@ -27,7 +27,7 @@ já grava em `public.error_logs` em produção, mas (a) só grava a coluna `mess
 
 2. **Enriquecer `src/lib/logger.ts` em vez de criar `src/lib/errorReporter.ts` paralelo.**
    `logger.error()` já é chamado em **103 lugares** de `src/` e já é a exceção arquitetural
-   documentada em `totum-state.md:168-175` para `supabase.from` fora de `services/`. Introduzir um
+   documentada em `docs/history/totum-state.md:168-175` para `supabase.from` fora de `services/`. Introduzir um
    helper novo (`captureError({where, what, error, severity})`) obrigaria reescrever 103 call
    sites ou manter dois caminhos de log divergentes. Em vez disso, o `logger` ganha um 5º
    parâmetro opcional de contexto e passa a ler `tenant_id`/`user_id` de um módulo de sessão global
@@ -200,7 +200,7 @@ create index if not exists idx_error_report_tenant_status
 | **1** | Migration (reconciliação + colunas novas + policies), `src/lib/logger.ts` enriquecido, sessão global de tenant/user para o logger | 0.5–1 dia |
 | **2** | `ErrorLogPage.tsx` (master), `errorLogs.ts`, `useErrorLogs.ts`, item de menu em Configurações | 1 dia |
 | **3** | `ErrorReportModal.tsx` (não-master) + tabela `error_report` + aba "Relatórios de usuários" | 1 dia |
-| **4** | Cobertura incremental: substituir catches genéricos pelos 103 call sites de `logger.error`, priorizando os 58 `catch {}` vazios e os que já engolem `error.message` (ver `AUDITORIA-API-KEYS.md`); screenshot opcional (dependência nova) | 2–3 dias, incremental — não é bloqueante para lançar as Fases 1–3 |
+| **4** | Cobertura incremental: substituir catches genéricos pelos 103 call sites de `logger.error`, priorizando os 58 `catch {}` vazios e os que já engolem `error.message` (ver `docs/history/AUDITORIA-API-KEYS.md`); screenshot opcional (dependência nova) | 2–3 dias, incremental — não é bloqueante para lançar as Fases 1–3 |
 
 ## Riscos
 

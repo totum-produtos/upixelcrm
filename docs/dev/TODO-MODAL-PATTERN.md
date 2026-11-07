@@ -1,6 +1,6 @@
 # TODO-MODAL-PATTERN.md — backlog do padrão de modais
 
-Regra em [docs/UI-PATTERNS.md](docs/UI-PATTERNS.md). Este arquivo lista o que **ainda
+Regra em [docs/UI-PATTERNS.md](../UI-PATTERNS.md). Este arquivo lista o que **ainda
 não** segue. Retro-fit da base inteira ficou fora do batch `[crm-B4]` de propósito —
 seriam 54 arquivos com `DialogContent`.
 
@@ -24,7 +24,7 @@ Ordenado por quanto o usuário perde quando dá erro.
 | # | Modal | Problema | Peso |
 |---|---|---|---|
 | 1 | `ApiSettingsModal` | **Não auditado** — arquivo pertence ao ciclo `api_keys`, em andamento em sessão paralela. Auditar depois que aquele ciclo fechar. | ⚠️ |
-| 2 | `CreateTagModal` | Sem estado de loading e sem `disabled` no botão Criar. Bloqueado pelo bug de fundo: `addGlobalTag` não persiste nada (ver `RELATORIO-CRM-BATCH-20260821.md`). | alto |
+| 2 | `CreateTagModal` | Sem estado de loading e sem `disabled` no botão Criar. Bloqueado pelo bug de fundo: `addGlobalTag` não persiste nada (ver `docs/history/RELATORIO-CRM-BATCH-20260821.md`). | alto |
 | 3 | `CustomFieldsManager` | Sub-dialog de criar campo — mesmo desenho do `TagsManager` antes do fix. | alto |
 | 4 | `GoalFormDialog` | Formulário longo; fechar em erro custa caro. | alto |
 | 5 | `ImportLeadsDialog` | Wizard multi-passo — precisa de regra própria para "erro no passo N". | alto |

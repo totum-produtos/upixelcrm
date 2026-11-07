@@ -2,7 +2,7 @@
 > **VERCEL** (domínios `upixel.app`/`*.upixel.app` no projeto `upixelcrm`;
 > subdomínios de tenant provisionados pela edge `tenant-provision-domain`).
 > O fluxo VPS/nginx/SSH descrito abaixo foi descontinuado para o frontend —
-> a VPS mantém apenas `evolution.grupototum.com`. Ver `totum-state.md`
+> a VPS mantém apenas `evolution.grupototum.com`. Ver `docs/history/totum-state.md`
 > (Incidente 2026-07-19) e `.github/workflows/deploy.yml`.
 
 # Plano de Ação: Deploy Zero-Downtime + Sempre Última Versão

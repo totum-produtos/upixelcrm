@@ -153,7 +153,7 @@ explícito, com backup antes.
 
 Cobre só a coluna nullable + índice único parcial. Não faz backfill, não torna `not null`,
 não toca RLS. Comando de aplicação e plano de rollback estão no cabeçalho do próprio
-arquivo e no `RELATORIO-CRM-BATCH-20260821.md`.
+arquivo e no `docs/history/RELATORIO-CRM-BATCH-20260821.md`.
 
 *Seção de segmentos reservados e rascunho de migration adicionados em 2026-08-21,
 batch `crm-revision`.*

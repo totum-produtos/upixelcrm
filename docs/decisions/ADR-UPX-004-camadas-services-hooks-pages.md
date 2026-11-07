@@ -4,9 +4,9 @@
 **Data:** 2026-11-07 (formaliza prática em andamento)
 
 ## Contexto
-Havia queries Supabase espalhadas em hooks e páginas. A adequação por camadas (`totum-state.md`) criou repositórios por domínio em `src/services/` (leads, users, integrations, inbox, broadcast, automations e outros) e migrou hooks para eles. O Lote 1 e o Lote 2 foram concluídos em 2026-07-15, com build e lint verdes por movimento. O trabalho entrou pelo PR #37 (commit `906dd5f`).
+Havia queries Supabase espalhadas em hooks e páginas. A adequação por camadas (`docs/history/totum-state.md`) criou repositórios por domínio em `src/services/` (leads, users, integrations, inbox, broadcast, automations e outros) e migrou hooks para eles. O Lote 1 e o Lote 2 foram concluídos em 2026-07-15, com build e lint verdes por movimento. O trabalho entrou pelo PR #37 (commit `906dd5f`).
 
-Estado verificado hoje: `src/services/` tem 15 arquivos mais `shadow-sdr/`. Ainda há chamadas diretas `supabase.from/rpc` em 3 páginas: `src/pages/ImportPage.tsx`, `src/pages/UsersPage.tsx` e `src/pages/CampaignsPage.tsx`. `AUDITORIA-CAMADAS.md` registra também um vazamento em `WhatsAppManagement.tsx`, área sensível.
+Estado verificado hoje: `src/services/` tem 15 arquivos mais `shadow-sdr/`. Ainda há chamadas diretas `supabase.from/rpc` em 3 páginas: `src/pages/ImportPage.tsx`, `src/pages/UsersPage.tsx` e `src/pages/CampaignsPage.tsx`. `docs/history/AUDITORIA-CAMADAS.md` registra também um vazamento em `WhatsAppManagement.tsx`, área sensível.
 
 ## Decisão
 O fluxo de dependência é `pages/` para `hooks/` para `services/` para Supabase. Só `services/` fala com o Supabase. Páginas não chamam o cliente direto. Cada movimento de migração é 1 commit, 1 PR pequeno, com build, lint e teste após cada um, e reversão se quebrar.
@@ -18,6 +18,6 @@ O fluxo de dependência é `pages/` para `hooks/` para `services/` para Supabase
 - Fetches diretos a Evolution e Meta ficam fora dos services (regra do Lote 2, movimento 11).
 
 ## Referências
-- `totum-state.md`, `AUDITORIA-CAMADAS.md`, `src/services/`
+- `docs/history/totum-state.md`, `docs/history/AUDITORIA-CAMADAS.md`, `src/services/`
 - PR #37, commit `906dd5f`
 - `docs/dev/PLANO-ADEQUACAO-BUILDOPS.md` (Fase 4)

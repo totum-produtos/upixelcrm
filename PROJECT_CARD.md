@@ -8,7 +8,7 @@ CRM SaaS multi-tenant por subdomínio para gestão de vendas e atendimento (funi
 
 ## Usuários
 - Gestores comerciais, vendedores e equipes de atendimento de PMEs (fonte: `CLAUDE.md`).
-- Admin master da plataforma (`is_master_user()`, ver `TENANT_PLAN.md`).
+- Admin master da plataforma (`is_master_user()`, ver `docs/dev/TENANT_PLAN.md`).
 
 ## Stack
 React 18, TypeScript strict, Vite, Tailwind, shadcn/ui, TanStack Query, React Hook Form + Zod, Recharts, React Flow, dnd-kit. Backend Supabase (Postgres, Auth, Realtime, 33 edge functions). Testes com Vitest e Playwright (sem testes E2E ainda). Detalhes e justificativa: `docs/decisions/ADR-UPX-001-stack-canonica.md`.
@@ -30,7 +30,7 @@ React 18, TypeScript strict, Vite, Tailwind, shadcn/ui, TanStack Query, React Ho
 - Variáveis de ambiente: nomes em `CLAUDE.md`; valores ficam em Vercel, GitHub Secrets e Supabase. Nunca no repo.
 
 ## Repositório
-https://github.com/totum-produtos/upixelcrm (o `CLAUDE.md` ainda aponta `grupototum/upixelcrm`, desatualizado). Fluxo: 1 movimento = 1 commit = 1 PR pequeno (`totum-state.md`).
+https://github.com/totum-produtos/upixelcrm (o `CLAUDE.md` ainda aponta `grupototum/upixelcrm`, desatualizado). Fluxo: 1 movimento = 1 commit = 1 PR pequeno (`docs/history/totum-state.md`).
 
 ## Donos
 
@@ -67,18 +67,18 @@ SLA de disponibilidade e de atendimento do produto: A CONFIRMAR (Rael).
 - CI não roda em PR e não há branch protection. O gate não bloqueia nada antes do merge (ADR-UPX-005).
 - Sem E2E. Cobertura baixa (4,33% das linhas em lib/services/hooks).
 - Preview Vercel compartilha o backend de produção, segundo a configuração do repo.
-- Migrations: 6 tabelas em produção sem arquivo de migration, `supabase/migrations-pending/20260821_add_lead_slug.sql` nunca aplicada, migrations fora do CI (`AUDITORIA-CAMADAS.md`).
+- Migrations: 6 tabelas em produção sem arquivo de migration, `supabase/migrations-pending/20260821_add_lead_slug.sql` nunca aplicada, migrations fora do CI (`docs/history/AUDITORIA-CAMADAS.md`).
 - 3 `.sql` na raiz catalogados como "NÃO aplicar" e pastas soltas (`tmp/`, `audit/`, `CRM SALES/`, `Copywriter/`, `Prompts/`, `Revisão - Julho/`). Possível credencial, revisão do Sentinela.
 - Débito arquitetural: `AppContext.tsx` com 1184 linhas e `InboxPage.tsx` com 1740. Chamadas Supabase diretas em 3 páginas (ADR-UPX-004).
-- Sem rate limiting próprio nem error tracking centralizado (`AUDITORIA-CAMADAS.md`, camadas 9 e 12).
+- Sem rate limiting próprio nem error tracking centralizado (`docs/history/AUDITORIA-CAMADAS.md`, camadas 9 e 12).
 - Documentação desatualizada: `CLAUDE.md` (saúde técnica), `TODO.md`, `BUGS.md`, e `docs/CLOUDFLARE_PAGES.md` descreve hospedagem que não é a atual.
 
 ## Links
 - Plano de adequação: `docs/dev/PLANO-ADEQUACAO-BUILDOPS.md`
 - Decisões: `docs/decisions/README.md`
-- Contexto do projeto: `CLAUDE.md`, `README.md`, `TENANT_PLAN.md`
-- Camadas: `totum-state.md`, `AUDITORIA-CAMADAS.md`
-- Segurança: `SEGURANCA-MCP-SUPABASE.md`, `AUDITORIA-API-KEYS.md`
+- Contexto do projeto: `CLAUDE.md`, `README.md`, `docs/dev/TENANT_PLAN.md`
+- Camadas: `docs/history/totum-state.md`, `docs/history/AUDITORIA-CAMADAS.md`
+- Segurança: `docs/dev/SEGURANCA-MCP-SUPABASE.md`, `docs/history/AUDITORIA-API-KEYS.md`
 - Contribuição e rollback: `docs/CONTRIBUTING.md`, `docs/ROLLBACK.md`
 - Backlog: `TODO.md`, `BUGS.md`
 - Painel Vercel: A CONFIRMAR (Rael)

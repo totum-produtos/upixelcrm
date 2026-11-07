@@ -94,7 +94,7 @@ de UX a decidir. Sem opinião forçada aqui — aguardando Rael escolher, como o
 - Links já compartilhados externamente (WhatsApp/email) com UUID continuam precisando funcionar.
 
 **Escopo 🟠 confirmado, como o prompt já antecipava.** Não implementado — spec completa em
-`SPEC-LEAD-SLUG.md` (Bloco C).
+`docs/dev/SPEC-LEAD-SLUG.md` (Bloco C).
 
 ## A5 — Bug "Gerenciar Tags": diagnóstico completo em `TAGS-BUG-DIAGNOSE.md`
 

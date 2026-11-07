@@ -32,7 +32,7 @@ Medições em 2026-11-07: lint com 0 erros e 509 warnings (500 `no-explicit-any`
   - Área sensível (tenant): confirmar plano antes de mexer.
 
 - [ ] **[CAT-5 SRP]** Refatorar `InboxPage.tsx` (PARCIAL)
-  - Já feito: lógica de dados extraída para `src/hooks/useInbox.ts` (1046 linhas), fatias I-1..I-5 (`totum-state.md`: 9145f7d, aed70d9, d55bebe, 95f6605, 4109b5f).
+  - Já feito: lógica de dados extraída para `src/hooks/useInbox.ts` (1046 linhas), fatias I-1..I-5 (`docs/history/totum-state.md`: 9145f7d, aed70d9, d55bebe, 95f6605, 4109b5f).
   - Falta: a página cresceu para 1740 linhas (eram 1365). Extrair UI em componentes e hooks menores (`useWhatsAppAPI`, `useRealtimeMessages`).
 
 ---
@@ -40,7 +40,7 @@ Medições em 2026-11-07: lint com 0 erros e 509 warnings (500 `no-explicit-any`
 ## 🟡 ALTO
 
 - [ ] **[CAT-5 SRP]** Dividir `AppContext.tsx` (God Context) (PARCIAL)
-  - Já feito: A-1..A-4 moveram todas as queries para repositórios em `src/services/` (PR #38, `totum-state.md`); o arquivo não importa mais o cliente Supabase.
+  - Já feito: A-1..A-4 moveram todas as queries para repositórios em `src/services/` (PR #38, `docs/history/totum-state.md`); o arquivo não importa mais o cliente Supabase.
   - Falta: continua concentrando CRUD de leads, pipelines, colunas, tarefas, timeline e automações. Depende do item crítico de CAT-3.
 
 - [ ] **[CAT-6 TS]** Tipar `AppContext.tsx` (ABERTO)

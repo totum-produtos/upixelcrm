@@ -17,9 +17,9 @@ A stack canônica é: React 18 + Vite + TypeScript strict + Tailwind + shadcn/ui
 - Agentes e pessoas têm uma única fonte para "o que usamos".
 - O `CLAUDE.md` deve trocar "Vercel (implied)" por "Vercel (confirmado)" (item 2.4 do plano).
 - Há um segundo documento de deploy (`docs/CLOUDFLARE_PAGES.md`) que pode confundir. Deve ser marcado como histórico (item 2.2 do plano).
-- Migrations não passam pelo CI hoje (`AUDITORIA-CAMADAS.md`, camada 7). Fica como débito.
+- Migrations não passam pelo CI hoje (`docs/history/AUDITORIA-CAMADAS.md`, camada 7). Fica como débito.
 
 ## Referências
 - `CLAUDE.md`, `vercel.json`, `supabase/config.toml`, `.github/workflows/deploy.yml`
-- `totum-state.md`, `AUDITORIA-CAMADAS.md` (camadas 5 e 7)
+- `docs/history/totum-state.md`, `docs/history/AUDITORIA-CAMADAS.md` (camadas 5 e 7)
 - Commit `c97144f` (ajuste do rewrite SPA na Vercel), `fa68617` (headers de segurança no `vercel.json`)

@@ -32,7 +32,7 @@ mudança de RLS foi feita, e o fix não foi consolidado com a Correção 1 do ci
 - Seção 6 (`addGlobalTag` não persiste) — ❌ **AINDA ABERTO**. O mock segue em
   `AppContext.tsx:111` e o `AddTagModal` continua sugerindo 5 strings falsas em
   vez das tags reais do tenant. Aguarda decisão. Ver
-  `RELATORIO-CRM-BATCH-20260821.md`.
+  `docs/history/RELATORIO-CRM-BATCH-20260821.md`.
 
 O corpo abaixo é o diagnóstico original, preservado sem edição — as seções 7 e 8
 (query pendente e escolha de caminho) já foram resolvidas por este bloco.
@@ -67,13 +67,13 @@ Se confirmado, o erro é `42703 column tags.client_id does not exist`, e ele dis
 
 | Arquivo | Linha | Quando dispara |
 |---|---|---|
-| [CRMPage.tsx:175](src/pages/CRMPage.tsx:175) | `const { tags: tagMetas } = useTags();` | **no load da tela `/crm`** — antes de qualquer clique |
-| [TagsManager.tsx:30](src/components/crm/TagsManager.tsx:30) | `useTags()` | ao abrir o Dialog "Gerenciar Tags" |
+| [CRMPage.tsx:175](../../src/pages/CRMPage.tsx:175) | `const { tags: tagMetas } = useTags();` | **no load da tela `/crm`** — antes de qualquer clique |
+| [TagsManager.tsx:30](../../src/components/crm/TagsManager.tsx:30) | `useTags()` | ao abrir o Dialog "Gerenciar Tags" |
 
-`TagsManager` só é montado em [LeadProfilePage.tsx:538](src/pages/LeadProfilePage.tsx:538) — não há outro uso.
+`TagsManager` só é montado em [LeadProfilePage.tsx:538](../../src/pages/LeadProfilePage.tsx:538) — não há outro uso.
 
-`useTags` roda `fetchTags()` num `useEffect` no mount ([useTags.ts:36-38](src/hooks/useTags.ts:36)).
-Portanto o toast `"Erro ao carregar etiquetas. Tente novamente."` ([useTags.ts:29](src/hooks/useTags.ts:29))
+`useTags` roda `fetchTags()` num `useEffect` no mount ([useTags.ts:36-38](../../src/hooks/useTags.ts:36)).
+Portanto o toast `"Erro ao carregar etiquetas. Tente novamente."` ([useTags.ts:29](../../src/hooks/useTags.ts:29))
 aparece **duas vezes**: uma ao entrar em `/crm`, outra ao abrir o modal.
 
 > Isso já responde a pergunta do A5 ("erro ao abrir o modal, ao listar, ou ao criar?"):
@@ -83,7 +83,7 @@ aparece **duas vezes**: uma ao entrar em `/crm`, outra ao abrir o modal.
 
 ## 2. Por que NÃO é o mesmo bug de RLS do `api_keys`
 
-Policy atual de `tags` ([20260424_automation_and_crm_tables.sql:65-74](supabase/migrations/20260424_automation_and_crm_tables.sql:65)):
+Policy atual de `tags` ([20260424_automation_and_crm_tables.sql:65-74](../../supabase/migrations/20260424_automation_and_crm_tables.sql:65)):
 
 ```sql
 CREATE POLICY "Tenant isolation on tags"
@@ -92,7 +92,7 @@ CREATE POLICY "Tenant isolation on tags"
   WITH CHECK(client_id = public.get_user_client_id() OR public.is_master_user());
 ```
 
-E `is_master_user()` na versão vigente ([m55_fix_rls_n1_profiles_cache.sql:120](supabase/migrations/20250602180000_m55_fix_rls_n1_profiles_cache.sql:120)):
+E `is_master_user()` na versão vigente ([m55_fix_rls_n1_profiles_cache.sql:120](../../supabase/migrations/20250602180000_m55_fix_rls_n1_profiles_cache.sql:120)):
 
 ```sql
 SELECT COALESCE(public.get_cached_profile_field('role'), '') = 'master'
@@ -111,7 +111,7 @@ Duas definições conflitantes da mesma tabela:
 
 ### 3.1 O que a migration diz
 
-[supabase/migrations/20260424_automation_and_crm_tables.sql:48-58](supabase/migrations/20260424_automation_and_crm_tables.sql:48)
+[supabase/migrations/20260424_automation_and_crm_tables.sql:48-58](../../supabase/migrations/20260424_automation_and_crm_tables.sql:48)
 
 ```sql
 CREATE TABLE IF NOT EXISTS public.tags (
@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS public.tags (
 
 ### 3.2 O que o banco de produção diz
 
-[src/integrations/supabase/types.ts:2486-2509](src/integrations/supabase/types.ts:2486) — arquivo **gerado a partir do banco real**:
+[src/integrations/supabase/types.ts:2486-2509](../../src/integrations/supabase/types.ts:2486) — arquivo **gerado a partir do banco real**:
 
 ```ts
 tags: {
@@ -156,7 +156,7 @@ Em qualquer dos dois cenários, o resultado prático é o mesmo: **`tags.client_
 
 ### 3.4 O que o código faz com isso
 
-[useTags.ts:22-25](src/hooks/useTags.ts:22):
+[useTags.ts:22-25](../../src/hooks/useTags.ts:22):
 ```ts
 const { data, error } = await untypedFrom("tags")
   .select("*")
@@ -183,11 +183,11 @@ Mesmo que `client_id` existisse, `useTags` resolve o clientId errado para master
 const clientId = tenant?.id ?? user?.client_id;
 ```
 
-No subdomínio master, [TenantContext.tsx:37](src/contexts/TenantContext.tsx:37) seta
+No subdomínio master, [TenantContext.tsx:37](../../src/contexts/TenantContext.tsx:37) seta
 `tenant.id = "master"` — uma **sentinela literal, não UUID**. Logo o master consulta
 `WHERE client_id = 'master'` → lista vazia, e cria tags órfãs sob um "cliente" que não existe.
 
-O projeto já tem o helper que resolve isso — [`resolveClientId()`](src/lib/tenant-utils.ts:47) —
+O projeto já tem o helper que resolve isso — [`resolveClientId()`](../../src/lib/tenant-utils.ts:47) —
 e 20 arquivos já migraram (`useCustomFields`, `useLeadPhones`, `useGoals`, `useInbox`, …).
 `useTags` ficou para trás.
 
@@ -214,10 +214,10 @@ src/hooks/useBroadcast.ts:85
 
 | Operação | Cliente | Linha |
 |---|---|---|
-| `fetchTags` | `untypedFrom("tags")` | [22](src/hooks/useTags.ts:22) |
-| `createTag` | `untypedFrom("tags")` | [43](src/hooks/useTags.ts:43) |
-| `updateTag` | `supabase.from("tags")` (tipado) | [70](src/hooks/useTags.ts:70) |
-| `deleteTag` | `supabase.from("tags")` (tipado) | [88](src/hooks/useTags.ts:88) |
+| `fetchTags` | `untypedFrom("tags")` | [22](../../src/hooks/useTags.ts:22) |
+| `createTag` | `untypedFrom("tags")` | [43](../../src/hooks/useTags.ts:43) |
+| `updateTag` | `supabase.from("tags")` (tipado) | [70](../../src/hooks/useTags.ts:70) |
+| `deleteTag` | `supabase.from("tags")` (tipado) | [88](../../src/hooks/useTags.ts:88) |
 
 `updateTag`/`deleteTag` funcionam (não tocam `client_id`), enquanto `fetch`/`create` quebram.
 Sintoma para o usuário: **a lista não carrega, criar falha, mas editar/excluir "funcionaria"** —
@@ -227,7 +227,7 @@ exceto que não há nada listado para editar.
 
 ## 6. Bug quarto — `addGlobalTag` não persiste nada
 
-[AppContext.tsx:944-953](src/contexts/AppContext.tsx:944):
+[AppContext.tsx:944-953](../../src/contexts/AppContext.tsx:944):
 
 ```ts
 const addGlobalTag = useCallback(async (tag: string) => {

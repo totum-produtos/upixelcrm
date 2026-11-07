@@ -8,7 +8,7 @@
 
 ### Feito
 - [x] T1 — confirmado: tabelas não existem
-- [x] T2/T5 — migration criada: [`supabase/migrations/20260901010000_create_api_keys_webhook_endpoints.sql`](supabase/migrations/20260901010000_create_api_keys_webhook_endpoints.sql)
+- [x] T2/T5 — migration criada: [`supabase/migrations/20260901010000_create_api_keys_webhook_endpoints.sql`](../../supabase/migrations/20260901010000_create_api_keys_webhook_endpoints.sql)
   - **Desvio do prompt original:** a RLS sugerida no anexo (`auth.uid() is not null`) permitiria qualquer usuário autenticado ler/criar/apagar chaves de **qualquer tenant** — vazamento cross-tenant grave. Troquei para o padrão real do projeto: `client_id = public.get_user_client_id() OR public.is_master_user()` (mesmo usado em `goals.sql`, `leads`, etc.), com `client_id` preenchido via `DEFAULT public.get_user_client_id()` (o frontend não envia client_id no insert).
 - [x] T4 — mensagem de erro no frontend: já estava correta em `ApiSettingsModal.tsx` (usa `error.message`). Nenhuma mudança necessária.
 - [x] `npm run build` — passa sem erro.
@@ -40,10 +40,10 @@ Branch `claude/orquestrar-totum-api-key-49413e` enviada para `origin` (deploy au
 - Era um idle timeout hardcoded de 30 min em `AuthContext.tsx` que forçava `signOut()` após inatividade.
 
 ### Feito
-- [x] T1/T2 — `IDLE_TIMEOUT_MS` agora configurável via `VITE_IDLE_TIMEOUT_MINUTES` (default 480min/8h, mínimo 5min) em [`src/contexts/AuthContext.tsx`](src/contexts/AuthContext.tsx)
+- [x] T1/T2 — `IDLE_TIMEOUT_MS` agora configurável via `VITE_IDLE_TIMEOUT_MINUTES` (default 480min/8h, mínimo 5min) em [`src/contexts/AuthContext.tsx`](../../src/contexts/AuthContext.tsx)
 - [x] T3 — mensagem de expiração com ação "Entrar" (sonner `^1.7.4` suporta `action`)
-- [x] T4 — `VITE_IDLE_TIMEOUT_MINUTES=480` adicionado ao [`.env.example`](.env.example)
-- [x] T5 — confirmado `autoRefreshToken: true` em `client.ts` (não alterado, estava na lista "não tocar"); instrução de JWT expiry no painel Supabase em [`tmp/SUPABASE_SESSION_CONFIG.md`](tmp/SUPABASE_SESSION_CONFIG.md)
+- [x] T4 — `VITE_IDLE_TIMEOUT_MINUTES=480` adicionado ao [`.env.example`](../../.env.example)
+- [x] T5 — confirmado `autoRefreshToken: true` em `client.ts` (não alterado, estava na lista "não tocar"); instrução de JWT expiry no painel Supabase em [`tmp/SUPABASE_SESSION_CONFIG.md`](../../tmp/SUPABASE_SESSION_CONFIG.md)
 - [x] `npm run build` — passa sem erro
 
 ### Área sensível
@@ -62,14 +62,14 @@ Branch `claude/orquestrar-totum-api-key-49413e` enviada para `origin` (deploy au
 ### Diagnóstico corrigido em relação ao anexo original
 - O anexo dizia que só o "Modo Gerenciado" tinha endpoints Evolution hardcoded e que o "Modo Avançado" já era genérico. **Não é verdade**: todas as ações (`connect`, `status`, `disconnect`, `send-message`, `send-media`) chamam endpoints específicos da Evolution, nos dois modos. Confirmado lendo o arquivo inteiro.
 - Servidor real identificado com a ajuda do usuário: OpenWA / "Totum SDR" (`https://zap.grupototum.com`), atrás de Basic Auth (Traefik) + header `X-API-Key`. Endpoints confirmados ao vivo (GET, sem efeito colateral): `GET /api/sessions`, `GET /api/sessions/{id}`, `GET /api/sessions/{id}/qr` (existe), `GET /api/webhooks`.
-- **Bloqueio real do "não consegue conectar":** não é só formato de endpoint — é que `supabase/functions/whatsapp-webhook/index.ts` (fora do escopo autorizado, área crítica) só entende o payload da Evolution (`body.event === "messages.upsert"`). O OpenWA manda `message.received`/`session.status`/`session.disconnected`. Detalhe completo em [`tmp/OPENWA_INTEGRATION_PENDING.md`](tmp/OPENWA_INTEGRATION_PENDING.md).
+- **Bloqueio real do "não consegue conectar":** não é só formato de endpoint — é que `supabase/functions/whatsapp-webhook/index.ts` (fora do escopo autorizado, área crítica) só entende o payload da Evolution (`body.event === "messages.upsert"`). O OpenWA manda `message.received`/`session.status`/`session.disconnected`. Detalhe completo em [`tmp/OPENWA_INTEGRATION_PENDING.md`](../../tmp/OPENWA_INTEGRATION_PENDING.md).
 
 ### Feito (aprovado explicitamente pelo usuário via pergunta em chat, escopo "conectar+enviar agora, webhook pendente")
-- [x] T1 — placeholders/labels "Evolution API" trocados por genéricos em [`WhatsAppManagement.tsx`](src/components/whatsapp/WhatsAppManagement.tsx) (mantive os rótulos "Evolution" em `BroadcastConfigModal`/`MasterIntegrationsPage`/landing pages — são nome de produto/rota, não placeholder de bug; fora de escopo)
+- [x] T1 — placeholders/labels "Evolution API" trocados por genéricos em [`WhatsAppManagement.tsx`](../../src/components/whatsapp/WhatsAppManagement.tsx) (mantive os rótulos "Evolution" em `BroadcastConfigModal`/`MasterIntegrationsPage`/landing pages — são nome de produto/rota, não placeholder de bug; fora de escopo)
 - [x] T2 — formato do `save-config` já cobre o necessário (api_url/instance_name/api_key) — instance_name passa a guardar o `id` (UUID) da sessão OpenWA quando `UPIXEL_WA_TYPE=openwa`
-- [x] T3 — [`whatsapp-proxy/index.ts`](supabase/functions/whatsapp-proxy/index.ts) aceita `UPIXEL_WA_URL`/`UPIXEL_WA_KEY`/`UPIXEL_WA_TYPE`, cai para `UPIXEL_EVOLUTION_*` como legado — zero mudança de comportamento pra quem ainda usa Evolution
+- [x] T3 — [`whatsapp-proxy/index.ts`](../../supabase/functions/whatsapp-proxy/index.ts) aceita `UPIXEL_WA_URL`/`UPIXEL_WA_KEY`/`UPIXEL_WA_TYPE`, cai para `UPIXEL_EVOLUTION_*` como legado — zero mudança de comportamento pra quem ainda usa Evolution
 - [x] T4 — implementado para OpenWA: criar sessão, iniciar, QR, status, conectar, desconectar/apagar, enviar texto. `send-media` retorna erro explícito "não suportado" (endpoint real não confirmado, evitei adivinhar)
-- [x] T5 — [`tmp/WHATSAPP_OPENWA_CONFIG.md`](tmp/WHATSAPP_OPENWA_CONFIG.md) criado
+- [x] T5 — [`tmp/WHATSAPP_OPENWA_CONFIG.md`](../../tmp/WHATSAPP_OPENWA_CONFIG.md) criado
 - [x] `npm run build` — passa (não valida o edge function Deno — sem `deno` CLI neste ambiente para typecheck; revisei o arquivo inteiro manualmente após as edições)
 
 ### Credenciais reais usadas só para teste transitório
@@ -82,4 +82,4 @@ devem ir só nas Secrets do Supabase, conforme `tmp/WHATSAPP_OPENWA_CONFIG.md`.
 - [ ] Adaptar `whatsapp-webhook/index.ts` pro formato OpenWA (fora do escopo autorizado desta tarefa — precisa aprovação explícita separada)
 - [ ] Registrar o webhook da sessão apontando pro CRM (formato do `POST /api/webhooks` não confirmado)
 - [ ] Testar T4 de ponta a ponta com um número real de teste antes de anunciar como resolvido — `POST /api/sessions`, `/start` e `/messages/send-text` foram implementados pelo formato informado, não testados ao vivo (evitei POST em servidor de produção)
-- [ ] Ver [`tmp/OPENWA_INTEGRATION_PENDING.md`](tmp/OPENWA_INTEGRATION_PENDING.md) para a lista completa de endpoints confirmados vs. inferidos
+- [ ] Ver [`tmp/OPENWA_INTEGRATION_PENDING.md`](../../tmp/OPENWA_INTEGRATION_PENDING.md) para a lista completa de endpoints confirmados vs. inferidos

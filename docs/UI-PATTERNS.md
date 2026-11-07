@@ -83,7 +83,7 @@ Use `AlertDialog` do shadcn, não `window.confirm`. O `confirm` nativo bloqueia 
 thread, ignora o tema e não é estilizável.
 
 > Débito conhecido: `TagsManager` ainda usa `confirm()` para excluir tag.
-> Ver `TODO-MODAL-PATTERN.md`.
+> Ver `docs/dev/TODO-MODAL-PATTERN.md`.
 
 ---
 
@@ -94,7 +94,7 @@ tablet não tem hover. Para ações destrutivas ou principais, mantenha visível
 opacidade reduzida, não zero). Aceitável apenas para atalhos que têm outro caminho.
 
 > Débito conhecido: ações do card do lead, editar/excluir tag, editar/excluir funil.
-> Ver `TODO-MODAL-PATTERN.md`.
+> Ver `docs/dev/TODO-MODAL-PATTERN.md`.
 
 ---
 

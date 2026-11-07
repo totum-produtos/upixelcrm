@@ -6,10 +6,10 @@
 ## Contexto
 O sistema integra WhatsApp, Meta, Google, Asaas e Supabase, o que gera muitos tokens. Evidências:
 - `.gitignore` bloqueia `.env`, `.env.*` (exceto `.env.example`) e `.env.migration`.
-- `AUDITORIA-API-KEYS.md` (2026-08-21) varreu `src/**` e `supabase/functions/**` por padrões de chave e não achou segredo. O único literal sensível-ish é um UUID de tenant (ID, não credencial).
+- `docs/history/AUDITORIA-API-KEYS.md` (2026-08-21) varreu `src/**` e `supabase/functions/**` por padrões de chave e não achou segredo. O único literal sensível-ish é um UUID de tenant (ID, não credencial).
 - `.github/workflows/deploy.yml` lê tudo de `secrets.*` do GitHub (`SUPABASE_ACCESS_TOKEN`, `VITE_*`).
 - `docs/CLEANUP_REPORT.md` registra que `read_secret` do Vault estava legível por `anon` e foi revogada em produção.
-- `SEGURANCA-MCP-SUPABASE.md` e o commit `c242675` tornaram o conector MCP do Supabase somente leitura (`read_only=true`).
+- `docs/dev/SEGURANCA-MCP-SUPABASE.md` e o commit `c242675` tornaram o conector MCP do Supabase somente leitura (`read_only=true`).
 - Commit `1a8f268` (cb-03) exige cron secret nos workers internos.
 
 ## Decisão
@@ -22,6 +22,6 @@ Nenhuma credencial entra no repositório, em docs, em logs ou no bundle do front
 - Os 3 `.sql` da raiz e `migrations-pending/` precisam de revisão do Sentinela antes de arquivar (item 2.3).
 
 ## Referências
-- `.gitignore`, `.github/workflows/deploy.yml`, `AUDITORIA-API-KEYS.md`
-- `SEGURANCA-MCP-SUPABASE.md`, `docs/CLEANUP_REPORT.md`
+- `.gitignore`, `.github/workflows/deploy.yml`, `docs/history/AUDITORIA-API-KEYS.md`
+- `docs/dev/SEGURANCA-MCP-SUPABASE.md`, `docs/CLEANUP_REPORT.md`
 - Commits `c242675`, `1a8f268`
