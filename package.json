@@ -14,6 +14,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
+    "test:e2e": "playwright test --trace off",
     "deploy": "bash deploy/deploy-local.sh",
     "ship": "node scripts/bump-sw-cache.mjs --patch && npm run build && npm run deploy",
     "ship:minor": "node scripts/bump-sw-cache.mjs --minor && npm run build && npm run deploy",
