@@ -40,3 +40,11 @@ export interface AuditLogRow {
   details: AuditLogDetails | null;
   created_at: string;
 }
+
+export interface CreateUserForm {
+  name: string;
+  email: string;
+  password: string;
+  role: string;
+  organization_id: string;
+}

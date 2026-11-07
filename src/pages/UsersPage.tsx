@@ -17,6 +17,9 @@ import {
   Users, Building2, Shield, Mail, Search, Ban, CheckCircle2,
   PencilLine, Trash2, UserPlus, UserMinus, ChevronDown, ChevronUp, Loader2, FileText, Plus
 } from "lucide-react";
+import { EditRoleDialog } from "@/components/users/EditRoleDialog";
+import { AddMemberDialog } from "@/components/users/AddMemberDialog";
+import { CreateUserDialog } from "@/components/users/CreateUserDialog";
 import { UsersStats } from "@/components/users/UsersStats";
 import { UsersListTab } from "@/components/users/UsersListTab";
 import { OrgsTab } from "@/components/users/OrgsTab";
@@ -410,134 +413,36 @@ export default function UsersPage() {
         </Tabs>
       </div>
 
-      <Dialog open={!!editModal} onOpenChange={(open) => !open && setEditModal(null)}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Alterar Permissão</DialogTitle>
-            <DialogDescription>Altere o nível de acesso do usuário no sistema.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3 py-2">
-            <p className="text-sm text-muted-foreground">Usuário: <strong className="text-foreground">{editModal?.name}</strong></p>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Nível de Permissão</Label>
-              <Select value={editRole} onValueChange={setEditRole}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {isMaster && <SelectItem value="master">Master</SelectItem>}
-                  <SelectItem value="supervisor">Supervisor</SelectItem>
-                  <SelectItem value="atendente">Atendente</SelectItem>
-                  <SelectItem value="vendedor">Vendedor</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setEditModal(null)}>Cancelar</Button>
-            <Button size="sm" onClick={saveRole}>Salvar Acesso</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <EditRoleDialog
+        profile={editModal}
+        role={editRole}
+        isMaster={isMaster}
+        onRoleChange={setEditRole}
+        onClose={() => setEditModal(null)}
+        onSave={saveRole}
+      />
 
       {isMaster && (
-        <Dialog open={!!addMemberModal} onOpenChange={(open) => !open && setAddMemberModal(null)}>
-          <DialogContent className="sm:max-w-sm">
-            <DialogHeader>
-              <DialogTitle>Adicionar Membro</DialogTitle>
-              <DialogDescription>Adicione um usuário existente à empresa {addMemberModal?.name}.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-2">
-              <div className="space-y-1.5">
-                <Label className="text-xs">E-mail do Usuário</Label>
-                <Input
-                  placeholder="usuario@empresa.com"
-                  value={addMemberEmail}
-                  onChange={(e) => setAddMemberEmail(e.target.value)}
-                  type="email"
-                />
-              </div>
-              <Button onClick={handleAddMember} disabled={addingMember || !addMemberEmail.trim()} className="w-full">
-                {addingMember && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                Adicionar à Empresa
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <AddMemberDialog
+          org={addMemberModal}
+          email={addMemberEmail}
+          adding={addingMember}
+          onEmailChange={setAddMemberEmail}
+          onClose={() => setAddMemberModal(null)}
+          onSubmit={handleAddMember}
+        />
       )}
 
       {isMaster && (
-        <Dialog open={createUserModal} onOpenChange={setCreateUserModal}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Criar Novo Usuário</DialogTitle>
-              <DialogDescription>Crie uma conta de usuário no sistema. O usuário será aprovado automaticamente.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Nome Completo</Label>
-                <Input
-                  placeholder="João Silva"
-                  value={createUserForm.name}
-                  onChange={(e) => setCreateUserForm({ ...createUserForm, name: e.target.value })}
-                  disabled={creatingUser}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">E-mail</Label>
-                <Input
-                  placeholder="usuario@empresa.com"
-                  type="email"
-                  value={createUserForm.email}
-                  onChange={(e) => setCreateUserForm({ ...createUserForm, email: e.target.value })}
-                  disabled={creatingUser}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Senha Temporária</Label>
-                <Input
-                  placeholder="Senha segura"
-                  type="password"
-                  value={createUserForm.password}
-                  onChange={(e) => setCreateUserForm({ ...createUserForm, password: e.target.value })}
-                  disabled={creatingUser}
-                />
-                <p className="text-[10px] text-muted-foreground">O usuário poderá alterar a senha no primeiro acesso</p>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Função/Permissão</Label>
-                <Select value={createUserForm.role || "vendedor"} onValueChange={(role) => setCreateUserForm({ ...createUserForm, role })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="master">Master</SelectItem>
-                    <SelectItem value="supervisor">Supervisor</SelectItem>
-                    <SelectItem value="atendente">Atendente</SelectItem>
-                    <SelectItem value="vendedor">Vendedor</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Empresa (Opcional)</Label>
-                <Select value={createUserForm.organization_id || "none"} onValueChange={(org_id) => setCreateUserForm({ ...createUserForm, organization_id: org_id === "none" ? "" : org_id })}>
-                  <SelectTrigger><SelectValue placeholder="Nenhuma empresa" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nenhuma empresa</SelectItem>
-                    {orgs && orgs.length > 0 && orgs.map((org) => (
-                      <SelectItem key={org.id} value={org.id}>{org.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" size="sm" onClick={() => setCreateUserModal(false)} disabled={creatingUser}>
-                Cancelar
-              </Button>
-              <Button size="sm" onClick={createUser} disabled={creatingUser}>
-                {creatingUser && <Loader2 className="h-3 w-3 animate-spin mr-2" />}
-                Criar Usuário
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <CreateUserDialog
+          open={createUserModal}
+          onOpenChange={setCreateUserModal}
+          form={createUserForm}
+          onFormChange={setCreateUserForm}
+          orgs={orgs}
+          creating={creatingUser}
+          onSubmit={createUser}
+        />
       )}
     </AppLayout>
   );
