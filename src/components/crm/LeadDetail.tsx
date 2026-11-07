@@ -1055,10 +1055,13 @@ export function LeadDetailActions({ leadId, onClose }: LeadDetailProps) {
   const { leads, deleteLead, mergeLeads } = useAppState();
   const { hasPermission } = usePermissions();
   const [showMergeModal, setShowMergeModal] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const lead = useMemo(() => leads.find((l) => l.id === leadId), [leadId, leads]);
 
+  // BUG-024: excluir pede confirmação, como em ContactsPage, BulkActionsBar e Inbox.
   const handleDelete = useCallback(async () => {
     if (!leadId) return;
+    setConfirmDelete(false);
     await deleteLead(leadId);
     onClose?.();
   }, [leadId, deleteLead, onClose]);
@@ -1081,10 +1084,30 @@ export function LeadDetailActions({ leadId, onClose }: LeadDetailProps) {
         </Button>
       )}
       {hasPermission("crm.delete") && (
-        <Button variant="ghost" size="sm" className="text-xs gap-1 h-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={handleDelete}>
+        <Button variant="ghost" size="sm" className="text-xs gap-1 h-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setConfirmDelete(true)}>
           <Trash2 className="h-3 w-3" /> Excluir
         </Button>
       )}
+
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir lead?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {lead.name ? `"${lead.name}" será excluído` : "O lead será excluído"} junto com o histórico dele. Essa ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <MergeLeadsModal
         open={showMergeModal}
