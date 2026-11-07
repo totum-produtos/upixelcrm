@@ -1,10 +1,12 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { MessageSquare, Plus, X } from "lucide-react";
+import { X } from "lucide-react";
 import { MergeLeadsModal } from "@/components/crm/MergeLeadsModal";
 import { InboxBulkActionsBar } from "@/components/inbox/InboxBulkActionsBar";
 import { InboxMediaViewer } from "@/components/inbox/InboxMediaViewer";
+import { InboxComposer } from "@/components/inbox/InboxComposer";
+import { InboxEmptyState } from "@/components/inbox/InboxEmptyState";
 import { InboxConversationList } from "@/components/inbox/InboxConversationList";
 import { InboxConversationFilters } from "@/components/inbox/InboxConversationFilters";
 import { InboxMessageList } from "@/components/inbox/InboxMessageList";
@@ -13,12 +15,8 @@ import { InboxLeadPanel } from "@/components/inbox/InboxLeadPanel";
 import { InboxDeleteLeadDialog } from "@/components/inbox/InboxDeleteLeadDialog";
 import { InboxNewConversationDialog } from "@/components/inbox/InboxNewConversationDialog";
 import { SelectionProvider, useSelection } from "@/contexts/SelectionContext";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import { CreateTaskModal } from "@/components/crm/CreateTaskModal";
 import { AddTagModal } from "@/components/crm/AddTagModal";
-import { ReplyBox } from "@/components/inbox/ReplyBox";
-import { CHANNEL_LABELS } from "@/lib/inbox-ui";
 import { useAppState } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useInbox } from "@/hooks/useInbox";
@@ -68,7 +66,6 @@ function InboxPageInner() { // force HMR reset
     searchQuery, setSearchQuery, channelFilter, setChannelFilter, unreadOnly, setUnreadOnly,
     inboxTab, setInboxTab, filteredConversations,
   } = useInboxFilters(inbox.conversations);
-  const [sending, setSending] = useState(false);
   const [showSidebar, setShowSidebar] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
     const saved = window.localStorage.getItem("upixel.inbox.showSidebar");
@@ -296,66 +293,20 @@ function InboxPageInner() { // force HMR reset
               />
 
               {selectedLeadGroup && (
-                <ReplyBox
-                  onSend={async (text, isPrivate, targetId) => {
-                    setSending(true);
-                    try {
-                      await inbox.sendMessage(text, targetId, isPrivate);
-                    } finally {
-                      setSending(false);
-                    }
-                  }}
-                  onSendMedia={async (file, targetId) => {
-                    setSending(true);
-                    try {
-                      if (!inbox.selectedLeadId) {
-                        toast.error("Selecione um contato primeiro.");
-                        return;
-                      }
-                      await inbox.sendWhatsAppMedia(inbox.selectedLeadId, file, targetId);
-                    } finally {
-                      setSending(false);
-                    }
-                  }}
-                  sending={sending}
-                  sourceConversations={selectedLeadGroup.source_conversations || []}
-                  activeConversationId={activeConversationId || undefined}
-                  setActiveConversationId={id => setActiveConversationId(id)}
-                  leadName={selectedLeadGroup.lead_name}
-                  leadPhone={selectedLeadGroup.lead_phone}
-                  leadEmail={selectedLeadGroup.lead_email}
-                  leadCompany={selectedLeadGroup.lead_company}
+                <InboxComposer
+                  selectedLeadGroup={selectedLeadGroup}
+                  selectedLeadId={inbox.selectedLeadId}
+                  activeConversationId={activeConversationId}
+                  setActiveConversationId={setActiveConversationId}
                   agentName={user?.name}
-                  onAddChannel={async (channel) => {
-                    const phone = selectedLeadGroup.lead_phone || "";
-                    const email = selectedLeadGroup.lead_email || "";
-                    const name = selectedLeadGroup.lead_name || "";
-                    const newId = await inbox.createConversation(
-                      channel,
-                      selectedLeadGroup.lead_id,
-                      phone,
-                      email,
-                      name
-                    );
-                    if (newId) {
-                      setActiveConversationId(newId);
-                      toast.success(`Canal ${CHANNEL_LABELS[channel] || channel} adicionado!`);
-                    }
-                  }}
+                  sendMessage={inbox.sendMessage}
+                  sendWhatsAppMedia={inbox.sendWhatsAppMedia}
+                  createConversation={inbox.createConversation}
                 />
               )}
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent">
-              <div className="h-20 w-20 rounded-card bg-secondary flex items-center justify-center mb-6 animate-pulse">
-                <MessageSquare className="h-10 w-10 text-muted-foreground/30" />
-              </div>
-              <h3 className="text-lg font-bold text-foreground">Sua Inbox</h3>
-              <p className="text-sm text-muted-foreground mt-1 max-w-xs text-center">Selecione um lead ao lado para visualizar o histórico de mensagens e responder.</p>
-              <Button size="sm" variant="outline" className="mt-6 text-xs shadow-sm rounded-xl px-4" onClick={() => setNewConvOpen(true)}>
-                <Plus className="h-3.5 w-3.5 mr-1.5 text-primary" /> Nova conversa
-              </Button>
-            </div>
+            <InboxEmptyState onNewConversation={() => setNewConvOpen(true)} />
           )}
         </div>
 
