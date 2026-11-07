@@ -35,8 +35,8 @@ vi.mock("@/contexts/TenantContext", () => ({
   useTenant: () => ({ tenant: { id: "t1" } }),
 }));
 
-vi.mock("@/contexts/AppContext", () => ({
-  useAppState: () => ({
+vi.mock("@/contexts/AppContext", () => {
+  const state = () => ({
     tasks: [],
     toggleTaskStatus: vi.fn(),
     moveLead: vi.fn(),
@@ -47,8 +47,12 @@ vi.mock("@/contexts/AppContext", () => ({
     refreshData: vi.fn(),
     updateLead: vi.fn(),
     addTimelineEvent: vi.fn(),
-  }),
-}));
+  });
+  return {
+    useAppState: state, useLeadsState: state, useTasksState: state, usePipelinesState: state,
+    useAutomationsState: state, useTimelineState: state, useAppDataState: state,
+  };
+});
 
 vi.mock("@/hooks/useInbox", async () => {
   const { useState } = await import("react");
