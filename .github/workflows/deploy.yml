@@ -13,6 +13,11 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      functions:
+        description: "Edge functions para redeploy manual, separadas por espaço (ex.: send-push whatsapp-status-probe). Vazio = só CI."
+        required: false
+        default: ""
 
 concurrency:
   group: deploy-${{ github.ref }}
@@ -23,8 +28,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       frontend: ${{ steps.filter.outputs.frontend }}
-      functions: ${{ steps.filter.outputs.functions }}
-      functions_list: ${{ steps.list.outputs.list }}
+      functions: ${{ steps.manual.outputs.list != '' && 'true' || steps.filter.outputs.functions }}
+      functions_list: ${{ steps.manual.outputs.list != '' && steps.manual.outputs.list || steps.list.outputs.list }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -45,6 +50,23 @@ jobs:
               - 'package-lock.json'
             functions:
               - 'supabase/functions/**'
+
+      - name: Lista manual (workflow_dispatch)
+        id: manual
+        if: github.event_name == 'workflow_dispatch' && inputs.functions != ''
+        env:
+          REQUESTED: ${{ inputs.functions }}
+        run: |
+          FNS=""
+          for f in $REQUESTED; do
+            if [[ "$f" =~ ^[a-z0-9-]+$ ]] && [ -d "supabase/functions/$f" ]; then
+              FNS="$FNS$f "
+            else
+              echo "::error::function inválida ou inexistente: $f"; exit 1
+            fi
+          done
+          echo "list=$FNS" >> "$GITHUB_OUTPUT"
+          echo "Functions (manual): $FNS"
 
       - name: Compute list of edge functions to deploy
         id: list
@@ -79,11 +101,13 @@ jobs:
       - name: Deploy changed edge functions (parallel)
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          FNS: ${{ needs.detect-changes.outputs.functions_list }}
         run: |
-          FNS="${{ needs.detect-changes.outputs.functions_list }}"
           PROJECT_REF="xusdhzwfkzufupjwbebt"
+          # --yes: a CLI (version: latest) passou a pedir confirmação quando não
+          # há terminal e abortava sem deployar nada ("Nothing was changed").
           echo "$FNS" | tr ' ' '\n' | grep -v '^$' | xargs -P 5 -I{} \
-            supabase functions deploy {} --use-api --project-ref "$PROJECT_REF"
+            supabase functions deploy {} --use-api --yes --project-ref "$PROJECT_REF"
 
   ci:
     needs: detect-changes
