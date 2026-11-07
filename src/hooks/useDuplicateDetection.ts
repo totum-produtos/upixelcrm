@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Lead } from "@/types";
 import { logger } from "@/lib/logger";
-import { useAppState } from "@/contexts/AppContext";
+import { useLeadsState } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 
 export type DuplicateReason = "phone" | "email" | "name_company";
@@ -46,7 +46,7 @@ function groupByKey<T>(items: T[], keyFn: (item: T) => string): Map<string, T[]>
 }
 
 export function useDuplicateDetection() {
-  const { leads: stateLeads } = useAppState();
+  const { leads: stateLeads } = useLeadsState();
   const { user } = useAuth();
   const clientId = user?.client_id ?? "";
 

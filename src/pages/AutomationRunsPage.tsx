@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, RefreshCw, Activity, MessagesSquare, CheckCircle2, XCircle, Pause, Loader2, ExternalLink, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useAppState } from "@/contexts/AppContext";
+import { useAutomationsState } from "@/contexts/AppContext";
 import { useAutomationRuns, type RunStatus } from "@/hooks/useAutomationRuns";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -18,7 +18,7 @@ const statusConfig: Record<RunStatus, { label: string; color: string; icon: type
 export default function AutomationRunsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { complexAutomations } = useAppState();
+  const { complexAutomations } = useAutomationsState();
   const { runs, loading, refresh, cancelRun } = useAutomationRuns(id ?? null);
 
   const auto = complexAutomations.find((a) => a.id === id);

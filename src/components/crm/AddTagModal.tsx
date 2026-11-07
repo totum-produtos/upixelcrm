@@ -5,7 +5,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAppState } from "@/contexts/AppContext";
+import { useLeadsState } from "@/contexts/AppContext";
 import { useTags } from "@/hooks/useTags";
 import { Tag, Plus, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +17,7 @@ interface AddTagModalProps {
 }
 
 export function AddTagModal({ open, onOpenChange, leadId }: AddTagModalProps) {
-  const { leads, updateLead } = useAppState();
+  const { leads, updateLead } = useLeadsState();
   const { tags: tenantTags } = useTags();
   const [newTag, setNewTag] = useState("");
   const [loading, setLoading] = useState(false);

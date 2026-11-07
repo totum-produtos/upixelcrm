@@ -34,7 +34,7 @@ import { NodesPalette } from './NodesPalette';
 import { LayoutGrid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { useAppState } from '@/contexts/AppContext';
+import { useAutomationsState } from '@/contexts/AppContext';
 
 const nodeTypes: NodeTypes = {
   trigger: TriggerNode,
@@ -100,7 +100,7 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => 
 };
 
 export function AutomationCanvas({ automationId }: { automationId: string }) {
-  const { complexAutomations } = useAppState();
+  const { complexAutomations } = useAutomationsState();
   const auto = complexAutomations.find((a) => a.id === automationId);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(

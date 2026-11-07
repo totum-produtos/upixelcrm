@@ -1,6 +1,6 @@
 import { useState, FormEvent } from "react";
 import { useLocation } from "react-router-dom";
-import { useAppState } from "@/contexts/AppContext";
+import { useAutomationsState } from "@/contexts/AppContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
   Plus, Zap, MessageSquare, Bot, Workflow, Clock, Instagram,
@@ -31,7 +31,7 @@ export default function AutomationsPage() {
   const location = useLocation();
   const initialTab = (location.state as { tab?: string })?.tab || "rules";
   const [activeTab, setActiveTab] = useState(initialTab);
-  const { addBasicAutomation } = useAppState();
+  const { addBasicAutomation } = useAutomationsState();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");

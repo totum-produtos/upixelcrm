@@ -10,7 +10,7 @@ import { FileDown, RotateCcw, Loader2, History, ChevronLeft, ChevronRight, Uploa
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenant } from "@/contexts/TenantContext";
-import { useAppState } from "@/contexts/AppContext";
+import { useAppDataState } from "@/contexts/AppContext";
 import { resolveClientId } from "@/lib/tenant-utils";
 import { exportLeadsToCSV } from "@/lib/export";
 import * as importsRepo from "@/services/imports";
@@ -29,7 +29,7 @@ function formatDate(iso: string): string {
 export default function ImportHistoryPage() {
   const { user } = useAuth();
   const { tenant } = useTenant();
-  const { refreshData } = useAppState();
+  const { refreshData } = useAppDataState();
 
   const clientId = useMemo(
     () => resolveClientId(tenant?.id, user?.client_id),

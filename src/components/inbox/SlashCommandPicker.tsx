@@ -4,7 +4,7 @@ import {
 } from "@/components/ui/command";
 import { MessageSquareReply, FileBadge, Zap } from "lucide-react";
 import { useCannedResponses } from "@/hooks/useCannedResponses";
-import { useAppState } from "@/contexts/AppContext";
+import { useAutomationsState } from "@/contexts/AppContext";
 import * as broadcastRepo from "@/services/broadcast";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
@@ -35,7 +35,7 @@ export function SlashCommandPicker({
   searchQuery,
 }: SlashCommandPickerProps) {
   const { responses } = useCannedResponses();
-  const { automations, complexAutomations } = useAppState();
+  const { automations, complexAutomations } = useAutomationsState();
   const { user } = useAuth();
   const { tenant } = useTenant();
   const clientId = tenant?.id ?? user?.client_id;

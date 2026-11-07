@@ -7,7 +7,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
-import { useAppState } from "@/contexts/AppContext";
+import { useAutomationsState } from "@/contexts/AppContext";
 import { useAutomationStats } from "@/hooks/useAutomationRuns";
 import { BotImportExportModal } from "./BotImportExportModal";
 import { formatDistanceToNow } from "date-fns";
@@ -15,7 +15,7 @@ import { ptBR } from "date-fns/locale";
 
 export function ComplexTab() {
   const navigate = useNavigate();
-  const { complexAutomations, createAutomation, deleteAutomation, toggleComplexAutomation } = useAppState();
+  const { complexAutomations, createAutomation, deleteAutomation, toggleComplexAutomation } = useAutomationsState();
   const { stats, loading: statsLoading } = useAutomationStats();
   const [importExportOpen, setImportExportOpen] = useState(false);
   const [exportPreselect, setExportPreselect] = useState<string | undefined>();

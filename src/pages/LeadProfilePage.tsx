@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { useAppState } from "@/contexts/AppContext";
+import { useLeadsState } from "@/contexts/AppContext";
 import { LeadDetail, LeadDetailActions } from "@/components/crm/LeadDetail";
 
 /**
@@ -17,7 +17,7 @@ import { LeadDetail, LeadDetailActions } from "@/components/crm/LeadDetail";
 export default function LeadProfilePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { leads } = useAppState();
+  const { leads } = useLeadsState();
   const lead = useMemo(() => leads.find((l) => l.id === id), [id, leads]);
 
   // Lead pode ser "contato"/"parceiro" — nesses casos a origem é /contacts.
