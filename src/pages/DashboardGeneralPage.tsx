@@ -144,9 +144,9 @@ export default function DashboardGeneralPage() {
                 </p>
               ) : (
                 pipeline.slice(0, 6).map((stage) => (
-                  <div key={stage.stage} className="space-y-2">
+                  <div key={stage.column_id} className="space-y-2">
                     <div className="flex items-center justify-between gap-4 text-sm">
-                      <span className="font-medium">{stage.stage}</span>
+                      <span className="font-medium">{stage.name}</span>
                       <span className="text-muted-foreground">{formatNumber(stage.count)}</span>
                     </div>
                     <div className="h-2 rounded-full bg-muted">
@@ -175,12 +175,12 @@ export default function DashboardGeneralPage() {
                 </p>
               ) : (
                 recentActivity.slice(0, 6).map((activity, index) => (
-                  <div key={`${activity.type}-${activity.lead_id ?? index}`} className="flex items-center gap-3 rounded-card border border-border p-3">
+                  <div key={`${activity.type}-${activity.created_at}-${index}`} className="flex items-center gap-3 rounded-card border border-border p-3">
                     <div className="rounded-card bg-muted p-2">
                       <MessageSquare className="h-4 w-4 text-primary" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{activity.description}</p>
+                      <p className="truncate text-sm font-medium">{activity.content}</p>
                       <p className="text-xs text-muted-foreground">{formatRelativeTime(activity.created_at)}</p>
                     </div>
                   </div>
@@ -208,7 +208,7 @@ export default function DashboardGeneralPage() {
                       </div>
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium">{task.title}</p>
-                        <p className="text-xs text-muted-foreground">{task.type || "Tarefa"}</p>
+                        <p className="text-xs text-muted-foreground">Tarefa</p>
                       </div>
                     </div>
                   </Link>
