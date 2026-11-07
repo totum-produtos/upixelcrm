@@ -89,3 +89,158 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  # Forja v1.1: varredura de segredos no histórico completo. Usa o binário (a action oficial
+  # exige licença em repositórios de organização).
+  secret-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Instalar gitleaks
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.30.0/gitleaks_8.30.0_linux_x64.tar.gz \
+            | tar -xz -C /usr/local/bin gitleaks
+
+      # Bloqueia só segredo novo, nos commits deste PR.
+      - name: Gitleaks (commits do PR, bloqueante)
+        run: gitleaks git --redact --exit-code 1 --log-opts="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}" .
+
+      # Histórico completo: em 2026-11-07 achou 14 vazamentos antigos, que pedem
+      # rotação de chave (Sentinela), não código. Só reporta, com valor redigido.
+      - name: Gitleaks (histórico completo, só relatório)
+        if: always()
+        continue-on-error: true
+        run: |
+          gitleaks git --redact --exit-code 0 --report-format json --report-path gitleaks.json .
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          r = json.load(open("gitleaks.json"))
+          print(f"## Gitleaks: {len(r)} achado(s) no histórico (valores redigidos)\n")
+          print("| Regra | Arquivo | Commit | Data |\n|---|---|---|---|")
+          for x in r:
+              print(f"| {x['RuleID']} | {x['File']} | {x['Commit'][:8]} | {x['Date'][:10]} |")
+          PY
+
+  # Falha só por achados NOVOS (diff contra a base do PR); o total da árvore é informativo.
+  semgrep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: semgrep/semgrep:1.184.0
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Semgrep (só achados novos falham)
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          semgrep scan --config p/default --config p/typescript --config p/react --metrics=off --baseline-commit "${{ github.event.pull_request.base.sha }}" --error src supabase/functions
+
+      - name: Total de achados na árvore (informativo)
+        if: always()
+        continue-on-error: true
+        run: |
+          semgrep scan --config p/default --config p/typescript --config p/react --metrics=off --json --quiet src supabase/functions > semgrep-all.json || true
+          n=$(python3 -c 'import json;print(len(json.load(open("semgrep-all.json"))["results"]))')
+          echo "## Semgrep: $n achados na árvore inteira (informativo)" >> "$GITHUB_STEP_SUMMARY"
+
+  deps-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: npm audit (critical em dependências de produção falha)
+        run: npm audit --audit-level=critical --omit=dev
+
+      - name: Resumo completo do npm audit (informativo)
+        if: always()
+        continue-on-error: true
+        run: |
+          {
+            echo "## npm audit (todas as severidades, dev incluso)"
+            echo '```'
+            npm audit || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # NÃO bloqueante por enquanto (continue-on-error): primeiro precisamos ver a baseline real
+  # antes de transformar as metas (perf >= 0.9, LCP, CLS, TBT) em gate obrigatório.
+  lighthouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - run: npm ci --include=dev
+
+      - name: Build com env dummy (igual ao e2e)
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: http://127.0.0.1:9
+          VITE_SUPABASE_PUBLISHABLE_KEY: e2e-dummy-key
+          VITE_ROOT_DOMAIN: localhost
+
+      - name: Preview local
+        run: |
+          npx vite preview --host 127.0.0.1 --port 4173 &
+          npx -y wait-on@8 -t 60000 http://127.0.0.1:4173/
+
+      - name: Lighthouse CI
+        run: |
+          npx -y @lhci/cli@0.16.0 collect --url=http://127.0.0.1:4173/ --numberOfRuns=1 --settings.chromeFlags="--no-sandbox --headless"
+          npx -y @lhci/cli@0.16.0 assert --config=lighthouserc.json
+
+      - name: Scores no resumo
+        if: always()
+        continue-on-error: true
+        run: |
+          node -e '
+            const fs = require("fs");
+            const f = fs.readdirSync(".lighthouseci").find((n) => /^lhr-.*\.json$/.test(n));
+            const l = JSON.parse(fs.readFileSync(".lighthouseci/" + f));
+            const c = (k) => Math.round(l.categories[k].score * 100);
+            const a = (k) => l.audits[k].displayValue;
+            console.log(["## Lighthouse (baseline, não bloqueante)", "",
+              `Perf ${c("performance")} | A11y ${c("accessibility")} | BP ${c("best-practices")} | SEO ${c("seo")}`, "",
+              `LCP ${a("largest-contentful-paint")} | CLS ${a("cumulative-layout-shift")} | TBT ${a("total-blocking-time")}`].join("\n"));
+          ' >> "$GITHUB_STEP_SUMMARY"
+
+
+  # Testes de banco (pgTAP) contra um Postgres local do Supabase na própria runner.
+  # Nunca conecta ao projeto Cloud e não usa secrets.
+  # continue-on-error: as migrations ainda não aplicam do zero num banco vazio
+  # (versões duplicadas como 20260401_*, CREATE TABLE public.profiles repetido,
+  # 20261029 com erro de sintaxe, ver docs/migration-history-reconciliation.md).
+  # Remover quando `supabase db start` passar limpo do zero.
+  db-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 3.0.0
+
+      - name: Subir só o Postgres local e aplicar as migrations
+        run: supabase db start
+
+      - name: Rodar testes pgTAP
+        run: supabase test db

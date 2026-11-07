@@ -1,13 +1,5 @@
-import { describe, it, expect } from "vitest";
+import { describe, it } from "vitest";
 
-describe("CB-09: Duplicate merge transactional", () => {
-  it("should re-link all related records before deleting duplicates", () => {
-    const reLinkBeforeDelete = true;
-    expect(reLinkBeforeDelete).toBe(true);
-  });
-
-  it("should not delete leads if re-linking fails", () => {
-    const deleteOnlyAfterSuccess = true;
-    expect(deleteOnlyAfterSuccess).toBe(true);
-  });
+describe("CB-09: merge de duplicados transacional", () => {
+  it.todo("coberto por supabase/tests/database/cb09_duplicates_merge.test.sql (pgTAP)");
 });
