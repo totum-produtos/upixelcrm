@@ -102,6 +102,9 @@ jobs:
       - name: Lint (0 errors exigidos; warnings do baseline tolerados)
         run: npm run lint
 
+      - name: Typecheck (tsc strict)
+        run: npm run typecheck
+
       - name: Testes (vitest)
         run: npm run test
 
