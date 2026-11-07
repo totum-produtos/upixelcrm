@@ -14,9 +14,10 @@ export default defineConfig({
       reporter: ["text-summary", "json-summary"],
       include: ["src/lib/**", "src/services/**", "src/hooks/**"],
       // Ratchet (Plano BuildOps, Fase 3): só pode subir. Medido em 2026-11-07:
-      // linhas 38,55%, funções 66,96%, branches 86,49%. Ao subir a cobertura,
+      // linhas 38,55%, funções 66,96%, branches 86,49%. Subido para 44 após a noite
+      // de 2026-11-07 (medido 45,08% de linhas). Ao subir a cobertura,
       // suba estes números junto.
-      thresholds: { lines: 38, statements: 38, functions: 65, branches: 85 },
+      thresholds: { lines: 44, statements: 44, functions: 65, branches: 85 },
     },
   },
   resolve: {
