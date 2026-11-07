@@ -13,7 +13,10 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text-summary", "json-summary"],
       include: ["src/lib/**", "src/services/**", "src/hooks/**"],
-      // Fase 1 do plano BuildOps: só medir. Threshold entra na Fase 3 (ratchet).
+      // Ratchet (Plano BuildOps, Fase 3): só pode subir. Medido em 2026-11-07:
+      // linhas 38,55%, funções 66,96%, branches 86,49%. Ao subir a cobertura,
+      // suba estes números junto.
+      thresholds: { lines: 38, statements: 38, functions: 65, branches: 85 },
     },
   },
   resolve: {
