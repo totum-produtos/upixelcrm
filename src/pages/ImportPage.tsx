@@ -16,83 +16,17 @@ import {
 import { toast } from "sonner";
 import { useAppState } from "@/contexts/AppContext";
 import { supabase } from "@/integrations/supabase/client";
-import type { TablesInsert } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenant } from "@/contexts/TenantContext";
 import { useCustomFields } from "@/hooks/useCustomFields";
 import type { CustomFieldType } from "@/types";
 import { CSVPreview } from "@/components/import/CSVPreview";
 import { resolveClientId } from "@/lib/tenant-utils";
-
-const systemFields = [
-  { key: "name", label: "Nome", required: true },
-  { key: "phone", label: "Telefone", required: false },
-  { key: "email", label: "Email", required: false },
-  { key: "company", label: "Empresa", required: false },
-  { key: "city", label: "Cidade", required: false },
-  { key: "position", label: "Cargo", required: false },
-  { key: "origin", label: "Origem", required: false },
-  { key: "tags", label: "Tags (separadas por ;)", required: false },
-];
-
-interface CsvData {
-  headers: string[];
-  rows: string[][];
-}
-
-interface ImportResult {
-  inserted: number;
-  skipped: number;
-  skippedNoName: number;
-  skippedDuplicate: number;
-  errors: number;
-}
-
-// Handles quoted fields, commas inside quotes, CRLF/LF, and UTF-8 BOM
-function parseCSV(text: string): CsvData {
-  const clean = text.replace(/^\uFEFF/, "");
-  const lines: string[][] = [];
-  let row: string[] = [];
-  let cell = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < clean.length; i++) {
-    const ch = clean[i];
-    const next = clean[i + 1];
-    if (inQuotes) {
-      if (ch === '"' && next === '"') { cell += '"'; i++; }
-      else if (ch === '"') { inQuotes = false; }
-      else { cell += ch; }
-    } else {
-      if (ch === '"') { inQuotes = true; }
-      else if (ch === ',') { row.push(cell.trim()); cell = ""; }
-      else if (ch === '\r' && next === '\n') {
-        row.push(cell.trim());
-        if (row.some((c) => c !== "")) lines.push(row);
-        row = []; cell = ""; i++;
-      } else if (ch === '\n' || ch === '\r') {
-        row.push(cell.trim());
-        if (row.some((c) => c !== "")) lines.push(row);
-        row = []; cell = "";
-      } else {
-        cell += ch;
-      }
-    }
-  }
-  if (cell || row.length > 0) {
-    row.push(cell.trim());
-    if (row.some((c) => c !== "")) lines.push(row);
-  }
-
-  if (lines.length === 0) return { headers: [], rows: [] };
-  const [headers, ...rawRows] = lines;
-  const rows = rawRows.map((r) => {
-    const padded = [...r];
-    while (padded.length < headers.length) padded.push("");
-    return padded.slice(0, headers.length);
-  });
-  return { headers, rows };
-}
+import {
+  SYSTEM_FIELDS, parseCSV, matrixToCsvData, autoMapHeaders, suggestFieldType,
+  normalizePhoneBR, buildLeadsToInsert,
+  type CsvData, type ImportResult, type CustomFieldDefLike,
+} from "@/lib/import-parsing";
 
 interface ImportPageProps {
   /** Quando true, não renderiza o AppLayout (modo embedded — usado dentro de modal/Dialog). */
@@ -149,26 +83,8 @@ export default function ImportPage({
     }
     setCsvData(parsed);
     setFileName(file.name);
-    // Auto-map: try to match headers to system fields by name
-    const autoMap: Record<string, string> = {};
-    const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s|_|\(|\)|-/g, "");
-    const aliases: Record<string, string[]> = {
-      name: ["nome", "name", "contato", "cliente", "razaosocial"],
-      phone: ["telefone", "phone", "tel", "celular", "fone", "whatsapp", "telcomercial"],
-      email: ["email", "e-mail", "mail", "emailcontato"],
-      company: ["empresa", "company", "negocio", "business", "nomefantasia"],
-      city: ["cidade", "city", "municipio"],
-      position: ["cargo", "position", "funcao", "role"],
-      origin: ["origem", "origin", "fonte", "source"],
-      tags: ["tags", "etiquetas", "labels"],
-    };
-    for (const field of systemFields) {
-      const fieldAliases = aliases[field.key] || [field.key];
-      const match = parsed.headers.find((h) =>
-        fieldAliases.some((a) => normalize(h).includes(normalize(a)))
-      );
-      if (match) autoMap[field.key] = match;
-    }
+    // Auto-map: tenta casar cabeçalhos com os campos do sistema pelo nome
+    const autoMap = autoMapHeaders(parsed.headers);
     setMapping(autoMap);
     // Auto-select first pipeline/column
     if (availablePipelines.length > 0 && !pipelineId) {
@@ -218,19 +134,13 @@ export default function ImportPage({
         }
         const sheet = wb.Sheets[firstSheetName];
         const matrix = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: "", raw: false }) as string[][];
-        // Drop fully empty leading rows (some spreadsheets have title rows)
-        const nonEmpty = matrix.filter((r) => r.some((c) => String(c ?? "").trim() !== ""));
-        if (nonEmpty.length === 0) {
+        // Descarta linhas vazias (algumas planilhas têm linhas de título em branco)
+        const parsed = matrixToCsvData(matrix);
+        if (!parsed) {
           toast.error("Planilha vazia.");
           return;
         }
-        const [headerRow, ...dataRows] = nonEmpty;
-        const headers = headerRow.map((h) => String(h ?? "").trim());
-        const rows = dataRows.map((r) => {
-          const padded = headers.map((_, i) => String(r[i] ?? "").trim());
-          return padded;
-        });
-        applyParsed({ headers, rows }, file);
+        applyParsed(parsed, file);
       } catch (err) {
         logger.error("xlsx parse error", err);
         toast.error("Falha ao ler o arquivo Excel. Verifique se está corrompido.");
@@ -265,54 +175,11 @@ export default function ImportPage({
     setColumn(firstCol?.id ?? "");
   };
 
-  // Suggests a field_type by sampling up to 20 non-empty values from the column.
-  // Returns the type plus pre-populated options when select is suggested.
-  const suggestFieldType = (
-    csvHeader: string,
-  ): { type: CustomFieldType; options: Array<{ label: string; value: string }> } => {
-    const empty = { type: "text" as CustomFieldType, options: [] };
-    if (!csvData) return empty;
-    const idx = csvData.headers.indexOf(csvHeader);
-    if (idx < 0) return empty;
-
-    const headerNorm = csvHeader.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-    if (/(data|nascimento|vencimento|aniversari)/.test(headerNorm)) return { type: "date", options: [] };
-    if (/(link|url|site|website)/.test(headerNorm)) return { type: "link", options: [] };
-    if (/(preco|valor|faturamento|receita|salari|renda|ticket|investimento|orcamento)/.test(headerNorm)) {
-      return { type: "number", options: [] };
-    }
-    if (/(observa|descric|notas|coment)/.test(headerNorm)) return { type: "textarea", options: [] };
-
-    const samples = csvData.rows
-      .map((r) => (r[idx] ?? "").trim())
-      .filter((v) => v !== "")
-      .slice(0, 20);
-    if (samples.length === 0) return empty;
-
-    // Numeric detection: all values parse as numbers (after BR locale normalize)
-    const numericish = samples.every((v) => {
-      const n = Number(v.replace(/\./g, "").replace(",", "."));
-      return !Number.isNaN(n);
-    });
-    if (numericish) return { type: "number", options: [] };
-
-    // Low-cardinality → select
-    const distinct = Array.from(new Set(samples));
-    if (samples.length >= 5 && distinct.length <= 8) {
-      return {
-        type: "select",
-        options: distinct.map((v) => ({ label: v, value: v })),
-      };
-    }
-
-    return empty;
-  };
-
   const openCreateFieldFor = (csvHeader?: string) => {
     setNewFieldName(csvHeader ?? "");
     setNewFieldHeader(csvHeader ?? "");
     if (csvHeader) {
-      const { type, options } = suggestFieldType(csvHeader);
+      const { type, options } = suggestFieldType(csvData, csvHeader);
       setNewFieldType(type);
       setNewFieldOptions(options);
       setTypeWasSuggested(type !== "text" || options.length > 0);
@@ -372,22 +239,7 @@ export default function ImportPage({
       logger.error("Erro ao carregar definições de campos:", defsError);
     }
 
-    const activeDefs = (freshDefs as any[] | null) ?? customFieldDefs;
-
-    // Normaliza telefone BR para comparação: tira não-dígitos, remove código do país (55)
-    // se presente, remove dígito 9 prefixo do celular se houver — garante que números no
-    // formato "+55 11 9 8765-4321" e "11 8765-4321" (formato antigo) ainda colidam.
-    // Retorna DDD + número (10 dígitos), evitando colisões entre DDDs diferentes
-    // que o slice(-8) anterior gerava (bug: 1187654321 e 3187654321 viravam o mesmo).
-    const normalizePhoneBR = (raw: string): string => {
-      let digits = raw.replace(/\D/g, "");
-      if (digits.length === 13 && digits.startsWith("55")) digits = digits.slice(2);
-      if (digits.length === 12 && digits.startsWith("55")) digits = digits.slice(2);
-      if (digits.length === 11 && digits[2] === "9") {
-        digits = digits.slice(0, 2) + digits.slice(3);
-      }
-      return digits.slice(-10);
-    };
+    const activeDefs: CustomFieldDefLike[] = freshDefs ?? customFieldDefs;
 
     // Busca todos os telefones existentes direto do banco (paginado, evita usar
     // o estado local que pode estar incompleto quando há mais de 1000 leads).
@@ -407,7 +259,7 @@ export default function ImportPage({
         if (error) break;
         if (!data || data.length === 0) break;
         for (const r of data) {
-          const ph = (r as any).phone as string | null;
+          const ph = r.phone;
           if (ph) existingPhoneKeys.add(normalizePhoneBR(ph));
         }
         if (data.length < PAGE) break;
@@ -420,64 +272,15 @@ export default function ImportPage({
       );
     }
 
-    const getValue = (row: string[], fieldKey: string): string | null => {
-      const csvCol = mapping[fieldKey];
-      if (!csvCol || csvCol === "__skip") return null;
-      const idx = csvData.headers.indexOf(csvCol);
-      return idx >= 0 && row[idx] ? row[idx] : null;
-    };
-
-    const leadsToInsert: TablesInsert<"leads">[] = [];
-    let skippedNoName = 0;
-    let skippedDuplicate = 0;
-
-    for (const row of csvData.rows) {
-      const name = getValue(row, "name");
-      if (!name) { skippedNoName++; continue; }
-
-      const phone = getValue(row, "phone");
-      if (phone) {
-        const key = normalizePhoneBR(phone);
-        if (existingPhoneKeys.has(key)) { skippedDuplicate++; continue; }
-        existingPhoneKeys.add(key);
-      }
-
-      const tagsRaw = getValue(row, "tags");
-      const tags = tagsRaw ? tagsRaw.split(";").map((t) => t.trim()).filter(Boolean) : [];
-
-      // Build custom_fields JSON from mapped custom field definitions
-      const custom_fields: Record<string, any> = {};
-      for (const def of activeDefs) {
-        const raw = getValue(row, `cf:${def.slug}`);
-        if (raw === null || raw === "") continue;
-        if (def.field_type === "number") {
-          const n = Number(raw.replace(",", "."));
-          if (!Number.isNaN(n)) custom_fields[def.slug] = n;
-        } else if (def.field_type === "checkbox") {
-          custom_fields[def.slug] = ["true", "1", "sim", "yes"].includes(raw.toLowerCase());
-        } else if (def.field_type === "multi_select") {
-          custom_fields[def.slug] = raw.split(";").map((s) => s.trim()).filter(Boolean);
-        } else {
-          custom_fields[def.slug] = raw;
-        }
-      }
-
-      leadsToInsert.push({
-        name,
-        phone: phone || null,
-        email: getValue(row, "email") || null,
-        company: getValue(row, "company") || null,
-        city: getValue(row, "city") || null,
-        position: getValue(row, "position") || null,
-        origin: getValue(row, "origin") || "Importação",
-        tags,
-        column_id: column,
-        client_id: clientId,
-        custom_fields: custom_fields,
-        // Só inclui tenant_id se for UUID (master view usa "master" sentinela)
-        ...(tenant?.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenant.id) ? { tenant_id: tenant.id } : {}),
-      });
-    }
+    const { leadsToInsert, skippedNoName, skippedDuplicate } = buildLeadsToInsert({
+      csvData,
+      mapping,
+      defs: activeDefs,
+      existingPhoneKeys,
+      columnId: column,
+      clientId,
+      tenantId: tenant?.id,
+    });
 
     let inserted = 0;
     let errors = 0;
@@ -523,7 +326,7 @@ export default function ImportPage({
             success = true;
           }
           break;
-        } catch (err: any) {
+        } catch (err) {
           logger.error(`Chunk ${chunkNum}/${totalChunks} exception:`, err);
           errors += chunk.length;
           retries++;
@@ -681,7 +484,7 @@ export default function ImportPage({
             </div>
 
             <div className="space-y-3">
-              {systemFields.map((field) => (
+              {SYSTEM_FIELDS.map((field) => (
                 <div key={field.key} className="flex items-center gap-3">
                   <div className="w-36 flex items-center gap-1.5 shrink-0">
                     <span className="text-sm text-foreground">{field.label}</span>
