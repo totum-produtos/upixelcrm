@@ -3,7 +3,8 @@ import { readFileSync } from "node:fs";
 import { createHmac } from "node:crypto";
 import { functionName, PUBLIC_FUNCTIONS, verifyJwt } from "../../../deploy/selfhosted/volumes/functions/main/auth";
 
-const SECRET = "test-jwt-secret-com-pelo-menos-32-caracteres";
+// Valor repetitivo de propósito: string com cara de chave dispara o gitleaks.
+const SECRET = "x".repeat(40);
 const b64url = (s: string) => Buffer.from(s).toString("base64url");
 function sign(payload: object, secret = SECRET, alg = "HS256") {
   const h = b64url(JSON.stringify({ alg, typ: "JWT" }));
