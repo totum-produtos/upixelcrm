@@ -72,6 +72,25 @@ a aba de Logs fica indisponível. Pode ser adicionada depois seguindo o
    curl https://api.upixel.com.br/rest/v1/ -H "apikey: $ANON_KEY"
    ```
 
+## Edge functions e Realtime na VPS (correção de 2026-11-08)
+
+Produção (`upixel.grupototum.com`) subiu sem o container `upixel-functions`: o
+Kong respondia `503 name resolution failed` em todo `/functions/v1/*`. O compose
+apontava para `supabase/functions/main`, um roteador que nunca existiu no repo.
+O Realtime dava `TenantNotFound: realtime` porque o tenant semeado é `realtime-dev`.
+
+O que mudou aqui:
+- `volumes/functions/main/`: roteador do edge-runtime. Verifica o JWT (HS256 com
+  `JWT_SECRET`), menos nas functions com `verify_jwt = false` do
+  `supabase/config.toml` (o teste `src/test/edge/selfhosted-router-auth.test.ts`
+  quebra se as duas listas divergirem).
+- serviço `functions`: `env_file: .env` (secrets das functions), `SUPABASE_URL`
+  público (URLs de webhook), código montado de `FUNCTIONS_DIR`.
+- `realtime`: alias `realtime-dev.supabase-realtime` e `kong.yml` apontando para ele.
+
+O compose da VPS (`/opt/upixel-supabase`) já diverge deste (rede `coolify` no Kong),
+então aplique as mudanças nele à mão, com backup, em vez de sobrescrever.
+
 ## Secrets de edge functions — mapa completo
 
 Ver `.env.example` (seção "Secrets de Edge Functions") para a lista com

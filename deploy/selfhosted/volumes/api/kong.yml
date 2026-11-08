@@ -56,7 +56,7 @@ services:
             - anon
 
   - name: realtime-v1
-    url: http://realtime:4000/socket/
+    url: http://realtime-dev.supabase-realtime:4000/socket/
     routes:
       - name: realtime-v1-all
         strip_path: true
