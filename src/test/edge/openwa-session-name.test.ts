@@ -12,3 +12,21 @@ describe("openwaSessionName", () => {
     expect(openwaSessionName(tenant, 1, 0.1)).not.toBe(openwaSessionName(tenant, 2, 0.1));
   });
 });
+
+import { pollQr } from "../../../supabase/functions/whatsapp-proxy/openwa-session";
+
+describe("pollQr", () => {
+  const noSleep = () => Promise.resolve();
+  it("tenta de novo até o QR ficar pronto", async () => {
+    let calls = 0;
+    const qr = await pollQr(async () => (++calls < 3 ? null : "data:image/png;base64,AAA"), 10, 0, noSleep);
+    expect(qr).toBe("data:image/png;base64,AAA");
+    expect(calls).toBe(3);
+  });
+  it("desiste depois das tentativas e trata exceção como 'ainda não'", async () => {
+    let calls = 0;
+    const qr = await pollQr(async () => { calls++; throw new Error("rede"); }, 4, 0, noSleep);
+    expect(qr).toBeNull();
+    expect(calls).toBe(4);
+  });
+});
