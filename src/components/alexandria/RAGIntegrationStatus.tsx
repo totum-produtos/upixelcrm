@@ -65,9 +65,9 @@ export function RAGIntegrationStatus() {
 
     // 5. AI Chat function (check via OPTIONS or simple test)
     try {
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      if (projectId) {
-        const res = await fetch(`https://${projectId}.supabase.co/functions/v1/ai-chat`, {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (supabaseUrl) {
+        const res = await fetch(`${supabaseUrl}/functions/v1/ai-chat`, {
           method: "OPTIONS",
         });
         updateCheck("AI Chat Function", res.status === 200 || res.status === 204);
@@ -80,9 +80,9 @@ export function RAGIntegrationStatus() {
 
     // 6. RAG Search function
     try {
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      if (projectId) {
-        const res = await fetch(`https://${projectId}.supabase.co/functions/v1/rag-search`, {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (supabaseUrl) {
+        const res = await fetch(`${supabaseUrl}/functions/v1/rag-search`, {
           method: "OPTIONS",
         });
         updateCheck("RAG Search Function", res.status === 200 || res.status === 204);

@@ -24,7 +24,7 @@ export function useInstagramIntegration() {
   });
   const [loading, setLoading] = useState(false);
 
-  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
   const fetchConfig = useCallback(async () => {
     try {
@@ -57,7 +57,7 @@ export function useInstagramIntegration() {
       const session = await getCurrentSession();
       if (!session) throw new Error("Not authenticated");
 
-      const url = `https://${projectId}.supabase.co/functions/v1/instagram-proxy?action=save-config`;
+      const url = `${supabaseUrl}/functions/v1/instagram-proxy?action=save-config`;
       const res = await fetch(url, {
         method: "POST",
         headers: {
@@ -87,7 +87,7 @@ export function useInstagramIntegration() {
       const session = await getCurrentSession();
       if (!session) throw new Error("Not authenticated");
 
-      const url = `https://${projectId}.supabase.co/functions/v1/instagram-proxy?action=disconnect`;
+      const url = `${supabaseUrl}/functions/v1/instagram-proxy?action=disconnect`;
       const res = await fetch(url, {
         method: "POST",
         headers: {
