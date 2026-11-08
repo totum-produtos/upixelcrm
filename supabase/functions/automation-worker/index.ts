@@ -63,6 +63,8 @@ serve(async (req: Request) => {
       .eq("status", "pending")
       .lte("scheduled_at", now)
       .or(`next_retry_at.is.null,next_retry_at.lte.${now}`)
+      // PostgREST 12 (self-hosted) recusa UPDATE com limit sem order explícito.
+      .order("scheduled_at", { ascending: true })
       .limit(50)
       .select("*");
 
@@ -73,6 +75,7 @@ serve(async (req: Request) => {
         .update({ status: "processing" })
         .eq("status", "pending")
         .lte("scheduled_at", now)
+        .order("scheduled_at", { ascending: true })
         .limit(50)
         .select("*");
       if (res.error) {
