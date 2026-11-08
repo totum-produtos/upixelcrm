@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/functions/v1/:path*",
-      "destination": "https://xusdhzwfkzufupjwbebt.supabase.co/functions/v1/:path*"
+      "destination": "https://upixel.grupototum.com/functions/v1/:path*"
     },
     {
       "source": "/((?!assets/).*)",

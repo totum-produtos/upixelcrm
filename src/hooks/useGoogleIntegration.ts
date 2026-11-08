@@ -20,14 +20,14 @@ export function useGoogleIntegration() {
     credentialsConfigured: false,
   });
 
-  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
   const invokeFunction = useCallback(async (action: string, body?: Record<string, unknown>, extraParams?: Record<string, string>) => {
     const session = await getCurrentSession();
     if (!session) throw new Error("Not authenticated");
 
     const params = new URLSearchParams({ action, ...extraParams });
-    const url = `https://${projectId}.supabase.co/functions/v1/google-oauth?${params}`;
+    const url = `${supabaseUrl}/functions/v1/google-oauth?${params}`;
     const res = await fetch(url, {
       method: "POST",
       headers: {
@@ -43,7 +43,7 @@ export function useGoogleIntegration() {
       throw new Error(err.error || "Request failed");
     }
     return res.json();
-  }, [projectId]);
+  }, [supabaseUrl]);
 
   const checkStatus = useCallback(async () => {
     try {
