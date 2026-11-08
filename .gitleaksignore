@@ -1,0 +1,2 @@
+# Falso positivo: segredo de teste do roteador self-hosted (PR #135), já trocado no commit seguinte.
+2360f2c914daf9d786458bbd03f6854ccef0136b:src/test/edge/selfhosted-router-auth.test.ts:generic-api-key:6

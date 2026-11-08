@@ -120,6 +120,12 @@ services:
     image: supabase/realtime:v2.34.47
     container_name: upixel-realtime
     restart: unless-stopped
+    # O Realtime tira o tenant do 1º rótulo do Host. SEED_SELF_HOST cria o tenant
+    # "realtime-dev"; sem este alias o Kong chegava como "realtime" (TenantNotFound).
+    networks:
+      default:
+        aliases:
+          - realtime-dev.supabase-realtime
     depends_on:
       db:
         condition: service_healthy
@@ -201,25 +207,36 @@ services:
 
   # ── edge-runtime (serve supabase/functions/*) ───────────────────────
   functions:
-    image: supabase/edge-runtime:v1.67.4
+    # Mesma versão do edge-runtime que já roda saudável na stack supa-core.
+    image: supabase/edge-runtime:v1.74.0
     container_name: upixel-functions
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
+    # Secrets das functions (UPIXEL_WA_*, ASAAS_*, META_*...) vêm do .env.
+    # shortcut: o .env inteiro vai para os workers, inclusive senhas do Postgres e do
+    # Studio; separar num functions.env se o .env crescer com segredos de outra coisa.
+    env_file: .env
     environment:
       JWT_SECRET: ${JWT_SECRET}
-      SUPABASE_URL: http://kong:8000
+      # URL pública: as functions montam URLs de webhook com ela (OpenWA, Meta).
+      # Com http://kong:8000 o webhook registrado apontaria para um host interno.
+      SUPABASE_URL: ${API_EXTERNAL_URL}
       SUPABASE_ANON_KEY: ${ANON_KEY}
       SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
       SUPABASE_DB_URL: postgres://postgres:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-postgres}
-      VERIFY_JWT: "false"
+      # O roteador (volumes/functions/main) verifica o JWT, menos nos webhooks
+      # com verify_jwt = false no supabase/config.toml.
+      VERIFY_JWT: "true"
     volumes:
-      - ../../supabase/functions:/home/deno/functions:ro
+      # FUNCTIONS_DIR: cópia de supabase/functions do repo na VPS (ver README).
+      - ${FUNCTIONS_DIR:-../../supabase/functions}:/home/deno/functions:ro
+      - ./volumes/functions/main:/home/deno/main:ro
     command:
       - start
       - --main-service
-      - /home/deno/functions/main
+      - /home/deno/main
       - --port
       - "9000"
 
