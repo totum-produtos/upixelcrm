@@ -18,7 +18,7 @@ echo; echo "== 1. integrações WhatsApp do tenant '$SUB' (banco)"
 docker exec -i upixel-db psql -U supabase_admin -d postgres -At -F' | ' <<SQL
 select i.id, i.provider, coalesce(i.instance_name,'(vazio)'), i.config->>'instance_name', i.config->>'friendly_name',
        i.config->>'api_url', i.status, coalesce(i.health_status,''), coalesce(i.consecutive_failures,0)
-from public.integrations i join public.tenants t on t.id = i.client_id
+from public.integrations i join public.tenants t on t.id::text = i.client_id::text
 where t.subdomain = '$SUB' and i.provider in ('whatsapp','whatsapp_official')
 order by i.created_at;
 SQL
