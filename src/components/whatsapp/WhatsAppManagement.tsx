@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { extractEdgeError } from "@/lib/edge-error";
 import * as integrationsRepo from "@/services/integrations";
 import { useWhatsAppInstances, WaInstance } from "@/hooks/useWhatsAppInstances";
 import { QuickConnectWizard } from "@/components/whatsapp/QuickConnectWizard";
@@ -228,9 +229,9 @@ function InstanceCard({
     setDeleteDialogOpen(false);
     setDeleting(true);
     try {
-      const params = new URLSearchParams({ action: "delete-instance", type, instance_name: instance.instance_name });
+      const params = new URLSearchParams({ action: "delete-instance", type, instance_name: instance.instance_name, integration_id: instance.id });
       const { error } = await supabase.functions.invoke(`whatsapp-proxy?${params.toString()}`);
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(await extractEdgeError(error, "Falha ao remover número"));
       toast.success("Número removido.");
       onDeleted();
     } catch (err: any) {

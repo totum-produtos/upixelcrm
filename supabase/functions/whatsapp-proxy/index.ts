@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 import { corsHeaders } from "../_shared/cors.ts";
 import { integrationSaveError } from "./db-errors.ts";
+import { openwaSessionName } from "./openwa-session.ts";
 
 const jsonHeaders = {
   ...corsHeaders,
@@ -239,7 +240,7 @@ Deno.serve(async (req) => {
           createRes = await fetch(`${managedUrl}/api/sessions`, {
             method: "POST",
             headers: { ...waAuthHeaders(managedKey), "Content-Type": "application/json" },
-            body: JSON.stringify({ name: friendlyName }),
+            body: JSON.stringify({ name: openwaSessionName(tenantId) }),
           });
         } catch (err) {
           // DNS/rede: sem isto o usuário via só "name resolution failed", sem saber
@@ -284,6 +285,11 @@ Deno.serve(async (req) => {
           .single();
         if (insertErr) {
           console.error("DB insert error:", insertErr);
+          // Sem isto a sessão fica órfã no OpenWA e a próxima tentativa pode dar 409.
+          await fetch(`${managedUrl}/api/sessions/${encodeURIComponent(sessionId)}`, {
+            method: "DELETE",
+            headers: waAuthHeaders(managedKey),
+          }).catch((e) => console.error("OpenWA orphan cleanup failed:", e));
           const e = integrationSaveError(insertErr);
           return jsonResponse({ error: e.error }, e.status);
         }
@@ -557,7 +563,13 @@ Deno.serve(async (req) => {
       .eq("provider", provider);
 
     let integration: Record<string, any> | null = null;
-    if (instanceNameParam) {
+    const integrationIdParam = url.searchParams.get("integration_id") || "";
+    if (isUuid(integrationIdParam)) {
+      // Id da linha é a chave estável; client_id mantém o isolamento por tenant.
+      const { data, error } = await instanceQuery.eq("id", integrationIdParam).maybeSingle();
+      if (error) console.error("integration lookup by id failed:", error);
+      integration = data;
+    } else if (instanceNameParam) {
       // Linhas OpenWA da versão anterior só têm session_id — aceita os dois.
       const { data } = await instanceQuery
         .or(`config->>instance_name.eq.${instanceNameParam},config->>session_id.eq.${instanceNameParam}`)
@@ -584,7 +596,7 @@ Deno.serve(async (req) => {
         return jsonResponse({ status: "disconnected", configured: false, instance: { state: "disconnected" }, reachable: false });
       }
       if (action === "delete-instance") {
-        return jsonResponse({ success: true }); // nothing to delete
+        return jsonResponse({ error: "Número não encontrado para remover. Recarregue a página e tente de novo.", code: "INSTANCE_NOT_FOUND" }, 404);
       }
       return jsonResponse({
         error: instanceNameParam
