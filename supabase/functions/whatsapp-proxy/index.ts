@@ -233,11 +233,24 @@ Deno.serve(async (req) => {
       // ── OpenWA: cria + inicia sessão, servidor devolve um id (UUID) que
       // vira o instance_name salvo — todas as outras ações usam esse id nas URLs. ──
       if (envIsOpenWA) {
-        const createRes = await fetch(`${managedUrl}/api/sessions`, {
-          method: "POST",
-          headers: { ...waAuthHeaders(managedKey), "Content-Type": "application/json" },
-          body: JSON.stringify({ name: friendlyName }),
-        });
+        let createRes: Response;
+        try {
+          createRes = await fetch(`${managedUrl}/api/sessions`, {
+            method: "POST",
+            headers: { ...waAuthHeaders(managedKey), "Content-Type": "application/json" },
+            body: JSON.stringify({ name: friendlyName }),
+          });
+        } catch (err) {
+          // DNS/rede: sem isto o usuário via só "name resolution failed", sem saber
+          // qual URL a secret aponta. Mostra só o hostname, nunca a chave.
+          let host = managedUrl;
+          try { host = new URL(managedUrl).hostname; } catch { /* URL inválida: mostra bruto */ }
+          console.error("OpenWA unreachable:", host, err);
+          return jsonResponse({
+            error: `Não foi possível alcançar o servidor WhatsApp (${host}). Confira a secret UPIXEL_WA_URL no Supabase.`,
+            attempted_host: host,
+          }, 502);
+        }
         const createData = await readResponseBody(createRes);
         if (!createRes.ok) {
           console.error("OpenWA create failed:", createRes.status, createData);
