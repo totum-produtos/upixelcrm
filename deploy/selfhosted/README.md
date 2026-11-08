@@ -91,6 +91,20 @@ O que mudou aqui:
 O compose da VPS (`/opt/upixel-supabase`) já diverge deste (rede `coolify` no Kong),
 então aplique as mudanças nele à mão, com backup, em vez de sobrescrever.
 
+### Aplicado na VPS em 2026-11-08
+- `docker-compose.override.yml` em `/opt/upixel-supabase` (serviço `functions` e alias do realtime). O compose principal não foi tocado.
+- `functions.env` (chmod 600) guarda as secrets das functions, separado do `.env` da stack.
+- As crons `whatsapp-queue-processor`, `whatsapp-health-check` e `automation-worker` agora chamam `http://kong:8000` com a service role do self-hosted. Antes chamavam o Cloud, e por isso nenhuma fila nem automação do banco de produção rodava.
+- Atualizar as functions: `cd /opt/upixel-src && git pull && rsync -a --delete supabase/functions/ /opt/upixel-supabase/functions/ && docker restart upixel-functions`.
+
+### Antes de apagar o Supabase Cloud
+1. Webhooks externos (Meta, Asaas, Instagram, OpenWA) cadastrados com a URL do self-hosted ou do `upixel.app`.
+2. Último registro nas tabelas principais igual ou mais antigo no Cloud que no self-hosted (nada novo gravado lá).
+3. Arquivos do Storage do Cloud copiados.
+4. Secrets do Cloud copiadas do cofre para o `functions.env`.
+5. `deploy.yml` publicando na VPS em vez do Cloud.
+6. Pausar o projeto por 7 dias e só então apagar.
+
 ## Secrets de edge functions — mapa completo
 
 Ver `.env.example` (seção "Secrets de Edge Functions") para a lista com

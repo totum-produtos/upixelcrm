@@ -18,8 +18,9 @@ React 18, TypeScript strict, Vite, Tailwind, shadcn/ui, TanStack Query, React Ho
 | Ambiente | Onde | Observação |
 |---|---|---|
 | Produção (frontend) | Vercel, deploy automático no push para `main` | `vercel.json` na raiz |
-| Produção (backend) | Supabase, project ref `xusdhzwfkzufupjwbebt` | `vercel.json` e `supabase/config.toml` |
-| Edge functions | GitHub Actions (`.github/workflows/deploy.yml`) | só no push para `main`, quando `supabase/functions/**` muda |
+| Produção (backend) | **Supabase self-hosted** na VPS Nova, `https://upixel.grupototum.com`, stack `/opt/upixel-supabase` (projeto compose `upixel-selfhosted`) | confirmado em 2026-11-08 pelo bundle de produção (chave anon sem `ref`) |
+| Edge functions | container `upixel-functions` na VPS, código em `/opt/upixel-supabase/functions` | **deploy manual** (rsync + `docker restart upixel-functions`). O `deploy.yml` ainda publica no Cloud, que a produção não usa |
+| Supabase Cloud (`xusdhzwfkzufupjwbebt`) | legado, a desativar | não serve produção. Ver checklist de desligamento em `deploy/selfhosted/README.md` |
 | Preview | Vercel, um preview por PR | hoje só valida o build (ver ADR-UPX-006, proposta) |
 | Local | `npm run dev`, subdomínios via `/etc/hosts` | ver `CLAUDE.md` |
 
@@ -82,5 +83,5 @@ SLA de disponibilidade e de atendimento do produto: A CONFIRMAR (Rael).
 - Contribuição e rollback: `docs/CONTRIBUTING.md`, `docs/ROLLBACK.md`
 - Backlog: `TODO.md`, `BUGS.md`
 - Painel Vercel: A CONFIRMAR (Rael)
-- Painel Supabase: project ref `xusdhzwfkzufupjwbebt`, URL do painel A CONFIRMAR (Rael)
+- Supabase de produção: self-hosted em `upixel.grupototum.com` (VPS Nova). O projeto Cloud `xusdhzwfkzufupjwbebt` é legado
 - Board de tasks (Linear, GitHub Issues ou Markdown): A CONFIRMAR (Rael)

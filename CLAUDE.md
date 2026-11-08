@@ -29,7 +29,7 @@
 |---|---|
 | Frontend | React 18, TypeScript, Vite, Tailwind CSS |
 | UI Components | shadcn/ui (Radix UI primitives + Tailwind) |
-| Backend / BaaS | Supabase |
+| Backend / BaaS | Supabase **self-hosted** na VPS (`upixel.grupototum.com`). O projeto Cloud é legado |
 | Autenticação | Supabase Auth |
 | Banco de dados | PostgreSQL via Supabase |
 | Roteamento | React Router DOM v6 |
@@ -39,7 +39,7 @@
 | Diagramas | React Flow |
 | Drag & Drop | @dnd-kit |
 | Testes | Vitest + Playwright + Testing Library |
-| Deploy | Vercel (frontend, preview por PR) + GitHub Actions (edge functions) |
+| Deploy | Vercel (frontend, preview por PR). Edge functions: rsync manual para a VPS (ver `deploy/selfhosted/README.md`) |
 | Versionamento | GitHub |
 
 ---
@@ -162,7 +162,7 @@ Regra: **IA sugere. Humano aprova.**
 |---|---|
 | Repositório | https://github.com/totum-produtos/upixelcrm |
 | Deploy | [URL produção — preencher] |
-| Supabase | [URL projeto Supabase — preencher] |
+| Supabase | https://upixel.grupototum.com (self-hosted, VPS Nova) |
 | Design | [URL Figma ou N/A] |
 
 ---
