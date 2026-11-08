@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 import { corsHeaders } from "../_shared/cors.ts";
+import { integrationSaveError } from "./db-errors.ts";
 
 const jsonHeaders = {
   ...corsHeaders,
@@ -278,12 +279,13 @@ Deno.serve(async (req) => {
         };
         const { data: inserted, error: insertErr } = await adminClient
           .from("integrations")
-          .insert({ client_id: clientId, tenant_id: tenantId, provider: "whatsapp", status: "connecting", config: newConfig })
+          .insert({ client_id: clientId, tenant_id: tenantId, provider: "whatsapp", status: "connecting", instance_name: newConfig.instance_name, config: newConfig })
           .select("id")
           .single();
         if (insertErr) {
           console.error("DB insert error:", insertErr);
-          return jsonResponse({ error: "Erro ao salvar instância no banco de dados." }, 500);
+          const e = integrationSaveError(insertErr);
+          return jsonResponse({ error: e.error }, e.status);
         }
 
         // Webhook de inbound — sem isso nenhuma mensagem recebida (nem as enviadas
@@ -360,13 +362,14 @@ Deno.serve(async (req) => {
 
       const { data: inserted, error: insertErr } = await adminClient
         .from("integrations")
-        .insert({ client_id: clientId, tenant_id: tenantId, provider: "whatsapp", status: "connecting", config: newConfig })
+        .insert({ client_id: clientId, tenant_id: tenantId, provider: "whatsapp", status: "connecting", instance_name: newConfig.instance_name, config: newConfig })
         .select("id")
         .single();
 
       if (insertErr) {
         console.error("DB insert error:", insertErr);
-        return jsonResponse({ error: "Erro ao salvar instância no banco de dados." }, 500);
+        const e = integrationSaveError(insertErr);
+        return jsonResponse({ error: e.error }, e.status);
       }
 
       // Set webhook (best effort). URL inclui integration_id para roteamento determinístico
@@ -498,6 +501,7 @@ Deno.serve(async (req) => {
       if (existing) {
         await adminClient.from("integrations").update({
           status: "configured",
+          instance_name,
           config: newConfig,
         }).eq("id", existing.id);
       } else {
@@ -506,6 +510,7 @@ Deno.serve(async (req) => {
           tenant_id: tenantId,
           provider,
           status: "configured",
+          instance_name,
           config: newConfig,
         });
       }
@@ -668,7 +673,7 @@ Deno.serve(async (req) => {
               });
             }
             sessionId = (createData as any).id;
-            await updateIntegration({ config: { ...config, instance_name: sessionId, session_id: sessionId, wa_type: "openwa" } });
+            await updateIntegration({ instance_name: sessionId, config: { ...config, instance_name: sessionId, session_id: sessionId, wa_type: "openwa" } });
           } else {
             await checkRes.text();
           }
@@ -691,6 +696,7 @@ Deno.serve(async (req) => {
           if (waStatus === "ready") {
             await updateIntegration({
               status: "connected",
+              instance_name: sessionId,
               config: { ...config, instance_name: sessionId, connected_number: (statusData as any)?.phone || (config as any).connected_number },
             });
             return jsonResponse({ instance: { state: "open", owner: (statusData as any)?.phone }, status: "connected" });
@@ -702,7 +708,7 @@ Deno.serve(async (req) => {
             ? (qrData as any).qr || (qrData as any).qrCode || (qrData as any).base64 || null
             : null;
 
-          await updateIntegration({ status: "connecting", config: { ...config, instance_name: sessionId } });
+          await updateIntegration({ instance_name: sessionId, status: "connecting", config: { ...config, instance_name: sessionId } });
           return jsonResponse({ base64: qrCode, instance: { state: "connecting" }, status: "connecting" });
         } catch (err) {
           if (isConnectionTimeout(err)) {
