@@ -297,7 +297,7 @@ export function QuickConnectWizard({
     pollingRef.current = setInterval(async () => {
       try {
         const params = new URLSearchParams({ action: "status", type: "normal", instance_name: instanceName });
-        const { data: res } = await supabase.functions.invoke(`whatsapp-proxy?${params.toString()}`);
+        const { data: res } = await supabase.functions.invoke(`whatsapp-proxy?${params.toString()}`, { body: { tenant_id: tenantId } });
         if (res?.status === "connected") {
           stopPolling();
           setData((prev) => ({ ...prev, connectedNumber: res?.instance?.owner || "" }));
@@ -345,7 +345,7 @@ export function QuickConnectWizard({
     setRefreshing(true);
     try {
       const params = new URLSearchParams({ action: "connect", type: "normal", instance_name: data.instanceName });
-      const { data: res } = await supabase.functions.invoke(`whatsapp-proxy?${params.toString()}`);
+      const { data: res } = await supabase.functions.invoke(`whatsapp-proxy?${params.toString()}`, { body: { tenant_id: tenantId } });
       if (res?.base64) setData((prev) => ({ ...prev, qrCode: res.base64 }));
     } catch { /* noop */ } finally {
       setRefreshing(false);
