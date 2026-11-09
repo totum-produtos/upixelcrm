@@ -20,6 +20,8 @@
 | "Erro ao salvar instância" (23505): coluna `instance_name` vazia | #139 | ✅ mergeado |
 | "Número removido" sem remover; 409 por sessão órfã no OpenWA | #140 (delete por `integration_id`, nome de sessão único, limpeza da órfã) | ✅ mergeado |
 | Modal sem QR (QR pedido antes do motor do OpenWA carregar) | #141 (`pollQr`, até ~15 s) | ✅ mergeado, falta rsync na VPS |
+| Ações do card sem tenant ("Número não encontrado" para master) e health-check que só conhecia Evolution | #143 | ✅ mergeado e no ar (rsync 09/11 15:40) |
+| Webhook OpenWA chegando no CRM (`session.status`) | log `upixel-functions` 09/11 | ✅ |
 | Teste real do OpenWA na VPS | `deploy/selfhosted/scripts/teste-whatsapp-real.sh` | ✅ criar 201, start 200, QR 200, apagar 204 |
 
 Backups na VPS: `*.bak-20261108-140825` (compose, `kong.yml`, `.env`) e `/root/cron-backup-20261108-141347.tsv`.
@@ -55,6 +57,8 @@ Limpeza no OpenWA: as tentativas sem QR deixaram sessões `upixel-...` e a órf�
 4. **Limpeza de integrações antigas** (health-check): uma instância com 503 (`971df672`), uma Meta com token expirado (`7c699e27`), uma sem configuração (`dbfe8ad7`). O "Matheus" (`f58950f1`) já foi apagado. Contar conversas ligadas antes de apagar qualquer uma.
 5. **Backfill opcional** da coluna `instance_name` nas linhas antigas (SQL e `count` prévio na descrição do #139). Altera dados de produção: só com aprovação.
 6. **Apagar o Cloud** só depois do checklist em `deploy/selfhosted/README.md` (dados, storage, secrets, webhooks, pausa de 7 dias).
+
+- **Realtime ainda quebrado:** `TenantNotFound: realtime-dev`. O roteamento está certo, mas o tenant não existe em `_realtime.tenants`. Diagnóstico e caminhos em `docs/dev/superchat-handoff-2026-11-09.md`, item 1.
 
 ## 5. Riscos conhecidos
 
