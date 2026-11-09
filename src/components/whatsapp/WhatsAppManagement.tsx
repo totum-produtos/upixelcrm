@@ -16,6 +16,9 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { extractEdgeError } from "@/lib/edge-error";
+import { resolveClientId } from "@/lib/tenant-utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTenant } from "@/contexts/TenantContext";
 import * as integrationsRepo from "@/services/integrations";
 import { useWhatsAppInstances, WaInstance } from "@/hooks/useWhatsAppInstances";
 import { QuickConnectWizard } from "@/components/whatsapp/QuickConnectWizard";
@@ -117,17 +120,22 @@ function InstanceCard({
 
   const isOfficial = instance.provider === "whatsapp_official";
   const type = isOfficial ? "official" : "normal";
+  // Tenant do subdomínio: sem isto o proxy usa profile.tenant_id e, para o master,
+  // procura o número no tenant "Master" ("não encontrado").
+  const { user } = useAuth();
+  const { tenant } = useTenant();
+  const tenantId = resolveClientId(tenant?.id, user?.client_id);
 
   const displayName = instance.friendly_name || instance.instance_name;
 
   const invokeProxy = useCallback(
     async (action: string, body?: Record<string, unknown>) => {
       const params = new URLSearchParams({ action, type, instance_name: instance.instance_name });
-      const { data, error } = await supabase.functions.invoke(`whatsapp-proxy?${params.toString()}`, { body });
+      const { data, error } = await supabase.functions.invoke(`whatsapp-proxy?${params.toString()}`, { body: { ...body, tenant_id: tenantId } });
       if (error) throw new Error(error.message);
       return data;
     },
-    [type, instance.instance_name]
+    [type, instance.instance_name, tenantId]
   );
 
   // Periodic status refresh (every 10s when connected)
@@ -230,7 +238,7 @@ function InstanceCard({
     setDeleting(true);
     try {
       const params = new URLSearchParams({ action: "delete-instance", type, instance_name: instance.instance_name, integration_id: instance.id });
-      const { error } = await supabase.functions.invoke(`whatsapp-proxy?${params.toString()}`);
+      const { error } = await supabase.functions.invoke(`whatsapp-proxy?${params.toString()}`, { body: { tenant_id: tenantId } });
       if (error) throw new Error(await extractEdgeError(error, "Falha ao remover número"));
       toast.success("Número removido.");
       onDeleted();

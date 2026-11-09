@@ -1,10 +1,11 @@
 // WhatsApp Health Check
 // Triggered by Supabase Cron — verifica saúde de todas as integrações WhatsApp.
 // verify_jwt: false — função interna de cron, autentica internamente via SUPABASE_SERVICE_ROLE_KEY.
-// Suporta providers: whatsapp (Evolution), whatsapp_official, whatsapp_cloud.
+// Suporta providers: whatsapp (Evolution ou OpenWA), whatsapp_official, whatsapp_cloud.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders } from "../_shared/cors.ts";
+import { openwaHealth } from "./openwa-status.ts";
 
 function timingSafeEqual(a: string, b: string): boolean {
   if (typeof a !== "string" || typeof b !== "string") return false;
@@ -29,6 +30,23 @@ async function checkIntegrationHealth(
   const provider = integration.provider;
 
   try {
+    // OpenWA (linhas com wa_type "openwa" ou session_id): sem isto o check usava a
+    // rota da Evolution, recebia erro e o painel acusava "servidor inacessível".
+    if (provider === "whatsapp" && (config.wa_type === "openwa" || config.session_id)) {
+      const sessionId = String(config.session_id || config.instance_name || "");
+      if (!config.api_url || !config.api_key || !sessionId) {
+        return { status: "unconfigured", details: "Missing configuration" };
+      }
+      const headers: Record<string, string> = { "X-API-Key": config.api_key };
+      const basicAuth = Deno.env.get("UPIXEL_WA_BASIC_AUTH");
+      if (basicAuth) headers["Authorization"] = `Basic ${btoa(basicAuth)}`;
+      const response = await fetchWithTimeout(`${config.api_url}/api/sessions/${encodeURIComponent(sessionId)}`, { headers });
+      if (response.status === 404) return { status: "disconnected", details: "Session not found" };
+      if (!response.ok) return { status: "unhealthy", details: `API error: ${response.status}` };
+      const data = await response.json();
+      return openwaHealth(data?.status);
+    }
+
     if (provider === "whatsapp") {
       const { api_url, api_key, instance_name } = config;
       if (!api_url || !api_key || !instance_name) {
@@ -137,7 +155,8 @@ Deno.serve(async (req) => {
     for (const integration of integrations) {
       try {
         const healthCheck = await checkIntegrationHealth(integration);
-        const isHealthy = healthCheck.status === "healthy";
+        // "connecting" = servidor respondeu, sessão só aguardando QR: não conta como falha.
+        const isHealthy = healthCheck.status === "healthy" || healthCheck.status === "connecting";
         const newConsecutiveFailures = isHealthy ? 0 : (integration.consecutive_failures || 0) + 1;
 
         await adminClient
