@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 import { corsHeaders } from "../_shared/cors.ts";
 import { integrationSaveError } from "./db-errors.ts";
-import { openwaSessionName } from "./openwa-session.ts";
+import { openwaSessionName, pollQr } from "./openwa-session.ts";
 
 const jsonHeaders = {
   ...corsHeaders,
@@ -35,6 +35,16 @@ const getFallbackStatus = (
   if (config.api_key && config.instance_name) return "configured";
   return persistedStatus || "disconnected";
 };
+
+// QR atual da sessão no OpenWA, ou null se ainda não estiver pronto.
+async function fetchOpenWAQr(apiUrl: string, apiKey: string, sessionId: string, openwa = envIsOpenWA): Promise<string | null> {
+  const res = await fetch(`${apiUrl}/api/sessions/${encodeURIComponent(sessionId)}/qr`, { headers: waAuthHeaders(apiKey, openwa) });
+  const data = await readResponseBody(res);
+  if (!res.ok || typeof data !== "object" || data === null) return null;
+  const qr: string | null = (data as any).qr || (data as any).qrCode || (data as any).base64 || null;
+  // O painel usa o valor direto em <img src>; base64 sem prefixo vira data URL.
+  return qr && !qr.startsWith("data:") && /^[A-Za-z0-9+/=]+$/.test(qr) ? `data:image/png;base64,${qr}` : qr;
+}
 
 async function readResponseBody(response: Response) {
   const text = await response.text();
@@ -305,11 +315,7 @@ Deno.serve(async (req) => {
 
         // QR code (best effort — pode ainda não estar pronto logo após o start;
         // o app já faz polling de "status"/reconecta o modal se vier vazio).
-        const qrRes = await fetch(`${managedUrl}/api/sessions/${sessionId}/qr`, { headers: waAuthHeaders(managedKey) });
-        const qrData = await readResponseBody(qrRes);
-        const qrCode = qrRes.ok && typeof qrData === "object" && qrData !== null
-          ? (qrData as any).qr || (qrData as any).qrCode || (qrData as any).base64 || null
-          : null;
+        const qrCode = await pollQr(() => fetchOpenWAQr(managedUrl, managedKey, sessionId));
 
         return jsonResponse({
           success: true,
@@ -714,11 +720,7 @@ Deno.serve(async (req) => {
             return jsonResponse({ instance: { state: "open", owner: (statusData as any)?.phone }, status: "connected" });
           }
 
-          const qrRes = await fetch(`${config.api_url}/api/sessions/${sessionPath}/qr`, { headers: waAuthHeaders(config.api_key, true) });
-          const qrData = await readResponseBody(qrRes);
-          const qrCode = qrRes.ok && typeof qrData === "object" && qrData !== null
-            ? (qrData as any).qr || (qrData as any).qrCode || (qrData as any).base64 || null
-            : null;
+          const qrCode = await pollQr(() => fetchOpenWAQr(config.api_url, config.api_key, sessionId, true));
 
           await updateIntegration({ instance_name: sessionId, status: "connecting", config: { ...config, instance_name: sessionId } });
           return jsonResponse({ base64: qrCode, instance: { state: "connecting" }, status: "connecting" });
