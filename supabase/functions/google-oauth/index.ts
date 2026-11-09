@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 import { corsHeaders } from "../_shared/cors.ts";
+import { saveIntegration } from "../_shared/saveIntegration.ts";
 
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo";
@@ -75,15 +76,13 @@ Deno.serve(async (req) => {
       const { google_client_id, google_client_secret } = body;
       if (!google_client_id || !google_client_secret) return json({ error: "Missing fields" }, 400);
 
-      await adminClient.from("integrations").upsert(
-        {
-          client_id: clientId,
-          provider: "google_credentials",
-          status: "configured",
-          config: { google_client_id, google_client_secret },
-        },
-        { onConflict: "client_id,provider" }
-      );
+      const { error: saveErr } = await saveIntegration(adminClient, {
+        client_id: clientId,
+        provider: "google_credentials",
+        status: "configured",
+        config: { google_client_id, google_client_secret },
+      });
+      if (saveErr) return json({ error: `Falha ao salvar integração: ${saveErr}` }, 500);
       return json({ success: true });
     }
 
@@ -173,18 +172,16 @@ Deno.serve(async (req) => {
       const userInfo = await userInfoRes.json();
       const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000).toISOString();
 
-      await adminClient.from("integrations").upsert(
-        {
-          client_id: clientId,
-          provider: "google",
-          status: "connected",
-          access_token: tokenData.access_token,
-          refresh_token: tokenData.refresh_token || null,
-          token_expires_at: expiresAt,
-          config: { email: userInfo.email, name: userInfo.name, picture: userInfo.picture },
-        },
-        { onConflict: "client_id,provider" }
-      );
+      const { error: saveErr2 } = await saveIntegration(adminClient, {
+        client_id: clientId,
+        provider: "google",
+        status: "connected",
+        access_token: tokenData.access_token,
+        refresh_token: tokenData.refresh_token || null,
+        token_expires_at: expiresAt,
+        config: { email: userInfo.email, name: userInfo.name, picture: userInfo.picture },
+      });
+      if (saveErr2) return json({ error: `Falha ao salvar integração: ${saveErr2}` }, 500);
       return json({ success: true, email: userInfo.email, name: userInfo.name });
     }
 

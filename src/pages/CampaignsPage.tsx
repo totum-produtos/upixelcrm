@@ -28,6 +28,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useMetaAds } from "@/hooks/useMetaAds";
 import { useGoogleAds } from "@/hooks/useGoogleAds";
+import { MetaAdsEmbeddedConnect } from "@/components/meta-ads/MetaAdsEmbeddedConnect";
 import type { AdCampaign } from "@/hooks/useMetaAds";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -479,7 +480,35 @@ export default function CampaignsPage() {
 
           {/* ─── Meta Ads ─── */}
           <TabsContent value="meta" className="mt-5 space-y-4">
-            {!meta.isConnected && <NotConnectedBanner platform="Meta Ads" configRoute="/meta-ads" navigate={navigate} />}
+            {!meta.isConnected && (
+              <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold">Conecte sua conta de anúncios do Meta</p>
+                  <Button variant="ghost" size="sm" className="text-xs h-7 gap-1" onClick={() => navigate("/meta-ads")}>
+                    <Settings className="h-3 w-3" /> Conexão manual
+                  </Button>
+                </div>
+                <MetaAdsEmbeddedConnect
+                  onConnected={async () => {
+                    await meta.refetchStatus();
+                    await meta.sync();
+                  }}
+                />
+              </div>
+            )}
+            {meta.isConnected && meta.tokenExpiringSoon && (
+              <div className="flex items-center gap-3 p-3 bg-amber-500/5 border border-amber-500/20 rounded-xl">
+                <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
+                <p className="text-xs text-amber-700 dark:text-amber-300 flex-1">
+                  {meta.tokenDaysLeft !== null && meta.tokenDaysLeft <= 0
+                    ? "O acesso ao Meta Ads expirou. Reconecte para voltar a sincronizar."
+                    : `O acesso ao Meta Ads expira em ${meta.tokenDaysLeft} dia(s). Reconecte para não perder a sincronização.`}
+                </p>
+                <Button variant="outline" size="sm" className="text-xs h-7 gap-1" onClick={() => navigate("/meta-ads")}>
+                  <RefreshCw className="h-3 w-3" /> Reconectar
+                </Button>
+              </div>
+            )}
             {realMetaCampaigns.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-36 border border-dashed border-border rounded-xl text-muted-foreground text-sm gap-2">
                 <Megaphone className="h-8 w-8 opacity-20" />

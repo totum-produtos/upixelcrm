@@ -1,7 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders } from "../_shared/cors.ts";
+import { saveIntegration } from "../_shared/saveIntegration.ts";
 
-const META_API = "https://graph.facebook.com/v20.0";
+const META_API = "https://graph.facebook.com/v22.0";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -66,21 +67,19 @@ Deno.serve(async (req) => {
       if (testData.error) return json({ error: `Meta API: ${testData.error.message}` }, 400);
 
       const tokenExpiresAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
-      await admin.from("integrations").upsert(
-        {
-          client_id: clientId,
-          provider: "meta_ads",
-          status: "connected",
-          access_token,
-          token_expires_at: tokenExpiresAt,
-          config: {
-            ad_account_id: normalId,
-            account_name: testData.name,
-            currency: testData.currency,
-          },
+      const { error: saveErr } = await saveIntegration(admin, {
+        client_id: clientId,
+        provider: "meta_ads",
+        status: "connected",
+        access_token,
+        token_expires_at: tokenExpiresAt,
+        config: {
+          ad_account_id: normalId,
+          account_name: testData.name,
+          currency: testData.currency,
         },
-        { onConflict: "client_id,provider" }
-      );
+      });
+      if (saveErr) return json({ error: `Falha ao salvar integração: ${saveErr}` }, 500);
       return json({ success: true, account_name: testData.name, currency: testData.currency });
     }
 
@@ -205,7 +204,14 @@ Deno.serve(async (req) => {
       });
 
       if (upserts.length > 0) {
-        await admin.from("ad_campaigns").upsert(upserts, { onConflict: "client_id,platform,external_id" });
+        const { error: upsertErr } = await admin
+          .from("ad_campaigns")
+          .upsert(upserts, { onConflict: "client_id,platform,external_id" });
+        if (upsertErr) {
+          // Ex.: tabela ad_campaigns ausente (migration 20260424_ads_attribution não aplicada)
+          console.error("meta-ads sync upsert error:", upsertErr.message);
+          return json({ error: `Falha ao gravar campanhas: ${upsertErr.message}`, code: "SYNC_PERSIST_FAILED" }, 500);
+        }
       }
 
       return json({ synced: upserts.length, since, until });
