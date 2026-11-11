@@ -646,7 +646,7 @@ Deno.serve(async (req) => {
         if (isOpenWA && linked) {
           // Sessão de outro sistema: só tira o webhook do CRM, nunca apaga a sessão.
           const r = await removeOpenWAWebhook(config.api_url, waAuthHeaders(config.api_key, true), openwaSessionId(config), webhookUrl);
-          if (r.error) console.error(`Linked session ${openwaSessionId(config)}: webhook removal failed:`, r.error);
+          if (r.error) console.error("Linked session webhook removal failed:", openwaSessionId(config), r.error);
         } else if (isOpenWA) {
           await fetch(`${config.api_url}/api/sessions/${instancePath}`, {
             method: "DELETE",
@@ -994,7 +994,7 @@ Deno.serve(async (req) => {
         if (isOpenWA && linked) {
           // Sessão de outro sistema: desconectar no CRM só desfaz o vínculo.
           const r = await removeOpenWAWebhook(config.api_url, waAuthHeaders(config.api_key, true), openwaSessionId(config), webhookUrl);
-          if (r.error) console.error(`Linked session ${openwaSessionId(config)}: webhook removal failed:`, r.error);
+          if (r.error) console.error("Linked session webhook removal failed:", openwaSessionId(config), r.error);
         } else if (isOpenWA) {
           await fetch(`${config.api_url}/api/sessions/${instancePath}`, {
             method: "DELETE",
