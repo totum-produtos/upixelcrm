@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 import { corsHeaders } from "../_shared/cors.ts";
 import { integrationSaveError } from "./db-errors.ts";
-import { openwaSessionName, pollQr } from "./openwa-session.ts";
+import { isLinkedSession, openwaSessionName, pollQr, removeOpenWAWebhook } from "./openwa-session.ts";
 
 const jsonHeaders = {
   ...corsHeaders,
@@ -629,6 +629,7 @@ Deno.serve(async (req) => {
     const config = { ...rawConfig, api_url: normalizedUrl };
     // Protocolo desta linha (Evolution × OpenWA) — decidido por linha, não por env.
     const isOpenWA = rowIsOpenWA(config);
+    const linked = isLinkedSession(config as Record<string, unknown>);
     // URL-safe instance name (for paths only; JSON bodies must use raw config.instance_name).
     // No OpenWA o path é o id da sessão (session_id, com fallback em instance_name).
     const instancePath = encodeURIComponent(isOpenWA ? openwaSessionId(config) : (config.instance_name || ""));
@@ -642,7 +643,11 @@ Deno.serve(async (req) => {
     // ── delete-instance: logout + delete from Evolution API + remove DB row ──
     if (action === "delete-instance") {
       try {
-        if (isOpenWA) {
+        if (isOpenWA && linked) {
+          // Sessão de outro sistema: só tira o webhook do CRM, nunca apaga a sessão.
+          const r = await removeOpenWAWebhook(config.api_url, waAuthHeaders(config.api_key, true), openwaSessionId(config), webhookUrl);
+          if (r.error) console.error(`Linked session ${openwaSessionId(config)}: webhook removal failed:`, r.error);
+        } else if (isOpenWA) {
           await fetch(`${config.api_url}/api/sessions/${instancePath}`, {
             method: "DELETE",
             headers: waAuthHeaders(config.api_key, true),
@@ -675,6 +680,15 @@ Deno.serve(async (req) => {
           let sessionId = openwaSessionId(config);
           const checkRes = await fetch(`${config.api_url}/api/sessions/${instancePath}`, { headers: waAuthHeaders(config.api_key, true) });
 
+          if (checkRes.status === 404 && linked) {
+            // Sessão vinculada sumiu do servidor: não recria (o dono é outro sistema).
+            await updateIntegration({ status: "disconnected" });
+            return jsonResponse({
+              connected: false, instance: { state: "disconnected" }, status: "disconnected", reachable: true,
+              error: "A sessão vinculada não existe mais no servidor WhatsApp. Ela pertence a outro sistema e precisa ser reconectada lá.",
+              code: "LINKED_SESSION_GONE",
+            });
+          }
           if (checkRes.status === 404) {
             // Sessão não existe mais no servidor — recria (mesmo padrão da Evolution: 404 → create).
             const createRes = await fetch(`${config.api_url}/api/sessions`, {
@@ -702,10 +716,13 @@ Deno.serve(async (req) => {
           Object.assign(config, { session_id: sessionId, wa_type: "openwa", webhook_url: webhookUrl, webhook_registered: wh.registered, webhook_error: wh.error ?? null });
 
           const sessionPath = encodeURIComponent(sessionId);
-          await fetch(`${config.api_url}/api/sessions/${sessionPath}/start`, {
-            method: "POST",
-            headers: waAuthHeaders(config.api_key, true),
-          }).catch((e) => console.error("OpenWA start failed:", e));
+          // Sessão vinculada: quem liga e desliga é o outro sistema, o CRM só observa.
+          if (!linked) {
+            await fetch(`${config.api_url}/api/sessions/${sessionPath}/start`, {
+              method: "POST",
+              headers: waAuthHeaders(config.api_key, true),
+            }).catch((e) => console.error("OpenWA start failed:", e));
+          }
 
           const statusRes = await fetch(`${config.api_url}/api/sessions/${sessionPath}`, { headers: waAuthHeaders(config.api_key, true) });
           const statusData = await readResponseBody(statusRes);
@@ -974,7 +991,11 @@ Deno.serve(async (req) => {
 
     if (action === "disconnect") {
       try {
-        if (isOpenWA) {
+        if (isOpenWA && linked) {
+          // Sessão de outro sistema: desconectar no CRM só desfaz o vínculo.
+          const r = await removeOpenWAWebhook(config.api_url, waAuthHeaders(config.api_key, true), openwaSessionId(config), webhookUrl);
+          if (r.error) console.error(`Linked session ${openwaSessionId(config)}: webhook removal failed:`, r.error);
+        } else if (isOpenWA) {
           await fetch(`${config.api_url}/api/sessions/${instancePath}`, {
             method: "DELETE",
             headers: waAuthHeaders(config.api_key, true),
