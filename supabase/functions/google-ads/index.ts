@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders } from "../_shared/cors.ts";
+import { saveIntegration } from "../_shared/saveIntegration.ts";
 
 const GOOGLE_ADS_API = "https://googleads.googleapis.com/v17";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -197,22 +198,20 @@ Deno.serve(async (req) => {
       const testData = await testRes.json();
       if (testData.error) return json({ error: `Google Ads API: ${JSON.stringify(testData.error)}` }, 400);
 
-      await admin.from("integrations").upsert(
-        {
-          client_id: clientId,
-          provider: "google_ads",
-          status: "connected",
-          config: {
-            // developer_token só vai pro DB se for per-tenant (informado manualmente).
-            // Quando vem do env, não persiste — fica sempre atualizado pelo Supabase secret.
-            ...(body.developer_token ? { developer_token: body.developer_token } : {}),
-            customer_id: normalId,
-            descriptive_name: testData.customer?.descriptiveName ?? null,
-            currency_code: testData.customer?.currencyCode ?? null,
-          },
+      const { error: saveErr } = await saveIntegration(admin, {
+        client_id: clientId,
+        provider: "google_ads",
+        status: "connected",
+        config: {
+          // developer_token só vai pro DB se for per-tenant (informado manualmente).
+          // Quando vem do env, não persiste — fica sempre atualizado pelo Supabase secret.
+          ...(body.developer_token ? { developer_token: body.developer_token } : {}),
+          customer_id: normalId,
+          descriptive_name: testData.customer?.descriptiveName ?? null,
+          currency_code: testData.customer?.currencyCode ?? null,
         },
-        { onConflict: "client_id,provider" }
-      );
+      });
+      if (saveErr) return json({ error: `Falha ao salvar integração: ${saveErr}` }, 500);
       return json({
         success: true,
         descriptive_name: testData.customer?.descriptiveName,
@@ -343,7 +342,13 @@ Deno.serve(async (req) => {
         }));
 
         if (upserts.length > 0) {
-          await admin.from("ad_campaigns").upsert(upserts, { onConflict: "client_id,platform,external_id" });
+          const { error: upsertErr } = await admin
+            .from("ad_campaigns")
+            .upsert(upserts, { onConflict: "client_id,platform,external_id" });
+          if (upsertErr) {
+            console.error("google-ads sync upsert error:", upsertErr.message);
+            return json({ error: `Falha ao gravar campanhas: ${upsertErr.message}`, code: "SYNC_PERSIST_FAILED" }, 500);
+          }
         }
         return json({ synced: upserts.length });
       }

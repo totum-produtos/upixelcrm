@@ -149,5 +149,6 @@ export function useMetaAds() {
     disconnect,
     sync,
     refetchCampaigns,
+    refetchStatus,
   };
 }

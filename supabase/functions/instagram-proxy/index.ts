@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 import { corsHeaders } from "../_shared/cors.ts";
+import { saveIntegration } from "../_shared/saveIntegration.ts";
 
 const jsonResponse = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -66,19 +67,17 @@ Deno.serve(async (req) => {
         }
       }
 
-      await adminClient.from("integrations").upsert(
-        {
-          client_id: clientId,
-          provider: "instagram",
-          status: "connected",
-          config: { 
-            ig_account_id, 
-            access_token: finalToken,
-            webhook_verify_token
-          },
+      const { error: saveErr } = await saveIntegration(adminClient, {
+        client_id: clientId,
+        provider: "instagram",
+        status: "connected",
+        config: { 
+          ig_account_id, 
+          access_token: finalToken,
+          webhook_verify_token
         },
-        { onConflict: "client_id,provider" }
-      );
+      });
+      if (saveErr) return jsonResponse({ error: `Falha ao salvar integração: ${saveErr}` }, 500);
 
       return jsonResponse({ success: true });
     }
