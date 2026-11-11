@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { extractEdgeError } from "@/lib/edge-error";
 import { resolveClientId } from "@/lib/tenant-utils";
+import { CONNECTING_POLL_MS, isConnectingStuck, isTerminalStatus } from "@/lib/whatsapp-connecting";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenant } from "@/contexts/TenantContext";
 import * as integrationsRepo from "@/services/integrations";
@@ -117,6 +118,8 @@ function InstanceCard({
   const [disconnectDialogOpen, setDisconnectDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [connectingSince, setConnectingSince] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
 
   const isOfficial = instance.provider === "whatsapp_official";
   const type = isOfficial ? "official" : "normal";
@@ -150,6 +153,29 @@ function InstanceCard({
     }, 10000);
     return () => clearInterval(t);
   }, [status, invokeProxy]);
+
+  // Em "connecting" (fora do modal de QR): consulta o servidor a cada 5s para o
+  // card sair sozinho do estado, e libera "Tentar de novo" depois de 1 minuto.
+  useEffect(() => {
+    if (status !== "connecting" || qrModalOpen) {
+      setConnectingSince(null);
+      return;
+    }
+    setConnectingSince((s) => s ?? Date.now());
+    const t = setInterval(async () => {
+      setNow(Date.now());
+      try {
+        const data = await invokeProxy("status");
+        if (isTerminalStatus(data?.status)) {
+          setStatus(data.status);
+          if (data.instance?.owner) setConnectedNumber(data.instance.owner);
+        }
+      } catch { /* noop: tenta de novo no próximo ciclo */ }
+    }, CONNECTING_POLL_MS);
+    return () => clearInterval(t);
+  }, [status, qrModalOpen, invokeProxy]);
+
+  const connectingStuck = status === "connecting" && isConnectingStuck(connectingSince, now);
 
   // Poll for QR scan completion
   useEffect(() => {
@@ -308,9 +334,17 @@ function InstanceCard({
               </Button>
             ) : status === "connecting" ? (
               <>
-                <Button size="sm" disabled className="text-xs gap-1 flex-1">
-                  <Loader2 className="h-3 w-3 animate-spin" /> Conectando…
-                </Button>
+                {connectingStuck ? (
+                  <Button size="sm" variant="outline" className="text-xs gap-1 flex-1"
+                    onClick={handleConnect} disabled={working}>
+                    {working ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                    Tentar de novo
+                  </Button>
+                ) : (
+                  <Button size="sm" disabled className="text-xs gap-1 flex-1">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Conectando…
+                  </Button>
+                )}
                 {!isOfficial && (
                   <Button size="sm" variant="outline" className="text-xs gap-1"
                     onClick={() => setQrModalOpen(true)}>
